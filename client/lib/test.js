@@ -13,95 +13,6 @@
  */
 
 
-
-/**
- *DATGUI 
- */
-var brainData; 
-// eeg
-var el1; 
-var el2; 
-var er1; 
-var er2; 
-// alpha 
-var al1; 
-var al2; 
-var ar1; 
-var ar2; 
-// alpha colors
-var aR;
-var aG;
-var aB;
-var aX; 
-
-var EEG = function(dataArray) {
-  // data = [0, 1, .2, .3];
-  el1 = dataArray[0];
-  el2 = dataArray[1];
-  er1 = dataArray[2];
-  er2 = dataArray[3];
-};
-
-var Alpha = function(dataArray) {
-  // data = [0, 1, .2, .3];
-  al1 = dataArray[0];
-  al2 = dataArray[1];
-  ar1 = dataArray[2];
-  ar2 = dataArray[3];
-};
-
-  
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-
-  socket.on('/muse/eeg', function(data){
-
-    brainData = new EEG(data.values);
-    console.log(data.values)
-  });
-
-  socket.on('/muse/elements/alpha_session_score', function (data){
-
-    brainData = new Alpha(data.values); // look inside data for values, grabs array 
-
-  });   
-}
-
-function draw() {
-  background(200); 
-  
-  // eegBez(aR, aG, aB, aX);
-  alphaCol();
-  // ellipse(width/2,height/2,al1/10,ar2/10)
-  // bezier(0,height/2, al1*width, al2*height, ar1*width, ar2*height, width, height/2);
-  // console.log(al1,al2,ar1,ar2)
-}
-
-
-
-var eegBez = function(r,g,b,x){
-  aX1 = map(el1, 0, 1682, 0, width);
-  aY1 = map(el2, 0, 1682, 0, height);
-  aX2 = map(er1, 0, 1682, 0, width);
-  aY2 = map(er2, 0, 1682, 0, height);
-  noFill();
-  strokeWeight(5);
-  stroke(r,g,b,x);
-  bezier(0,height/2, aX1, aY1, aX2, aY2, width, height/2); 
-  alpha(r,g,b,x);
-}
-  
-var alphaCol = function(){
-  aR = map(al1, 0, 1, 0, 255);
-  aG = map(al2, 0, 1, 0, 255);
-  aB = map(ar1, 0, 1, 0, 255);
-  aX = map(ar2, 0, 1, 0, 100); 
-  var c = color(aR, aG, aB, aX);
-  fill(c);
-  ellipse(width/2,height/2,100,100);
-}  
-
-
 /**
  * Quick settings
  */
@@ -116,307 +27,90 @@ var update_interval = 200;
 var socket = io.connect('http://localhost:8080');
 
 /**
- * General methods used
- */
-function setState(state) {
-
-  $("body").removeClass("connected uncertain disconnected");
-  $("body").addClass(state);
-};
-
-var enabledCharts = {};
-
-Highcharts.setOptions({
-    global: {
-        useUTC: false
-    }
-});
-
-function requestChartData(elem) {
-
-    var container = $(elem.target.container);
-
-    // If the chart was deleted before the timeout, then stop everything
-    if(elem == null || container.length <= 0) {
-        return false;
-    }
-
-    var path = container.parent().attr("id").replace("_chart", "")
-
-    if(enabledCharts[path] != null) {
-        var series = elem.target.series[0],
-            shift = series.data.length > 20; // shift if the series is longer than 20
-
-        // add the point
-        elem.target.series[0].addPoint([(new Date()).getTime() , parseFloat(enabledCharts[path]["data"])], true, shift);
-    }
-
-     // call it again after interval
-    setTimeout(function(){ requestChartData(elem) }, update_interval); 
-}
-
-function createChart(path, title, data) {
-
-    enabledCharts[path] = {
-      "element" : $("#charts")
-        .append("<div class='col-md-6'><div class='chart' id='" + path + "_chart'></div></div>")
-        .children("div").last().children("div"),
-        "data" : data,
-        "title" : title
-    }
-
-    enabledCharts[path]["chart"] = new Highcharts.Chart({
-        chart: {
-            renderTo: path + "_chart",
-            defaultSeriesType: 'spline',
-            marginRight: 10,
-            events: {
-                load: requestChartData
-            }
-        },
-        title: {
-            text: title
-        },
-        xAxis: {
-            type: 'datetime',
-            tickPixelInterval: 150
-        },
-        yAxis: {
-            title: {
-                text: 'Value'
-            },
-            plotLines: [{
-                value: 0,
-                width: 2,
-                color: '#8cc152'
-            }]
-        },
-        tooltip: {
-            enabled: false
-        },
-        legend: {
-            enabled: false
-        },
-        exporting: {
-            enabled: false
-        },
-        series: [{
-            name: title,
-            data: [{ x: (new Date()).getTime(), y: parseFloat(data)}],
-            marker: {
-           enabled: false
-        }
-        }]
-    });      
-}
-
-
-
-function setChart(path, enabled, title, data) {
-
-    if(enabled == null) enabled = true;
-
-    if(enabled && (enabledCharts[path] == null || !enabledCharts[path])) {
-        createChart(path, title, data);
-    }
-
-    if(!enabled && enabledCharts[path]) {
-        destroyChart(path);
-    }
-}
-
-function setChartData(path, data) {
-
-    if( enabledCharts[path] != null && enabledCharts[path] ) {
-        enabledCharts[path]["data"] = data;
-    }
-}
-
-var table = {},
-    jTable = null,
-    columns = 7;
-
-function setTableValue(opath, values) {
-
-    if(jTable == null) jTable = $("table#raw-table tbody");
-
-    var count = 0;
-
-    for (var title in values) {
-
-        // Add the counter
-        path = opath + '_' + count;
-
-        if(typeof table[path] == "undefined") {
-            // Always used
-            var the_column = '<td id=' + path + '><button class="btn btn-default btn-block" data-toggle="tooltip" data-placement="top" data-original-title="' + title + '">' + parseFloat(values[title]).toFixed(2); values[title] + '</button></td>';
-            // We just have to catch whether to make a new row
-            if(jTable.children("tr").length <= 0 || jTable.children("tr").last().children("td").length >= columns) {
-                table[path] = jTable.append('<tr>' + the_column + '</tr>').children("tr").last().children("td").last();
-            } else {
-                table[path] = jTable.children("tr").last().append(the_column).children("td").last();
-            }
-            // Enable tooltips
-      $(table[path]).children("button").tooltip();
-      $(table[path]).children("button").off("click").on("click", function(){
-                if($(this).hasClass('btn-default')) {
-                    $(this).removeClass("btn-default").addClass("btn-success");
-                    setChart(path, true, title, parseFloat(values[title]).toFixed(2));
-                } else {
-                    $(this).removeClass("btn-success").addClass("btn-default");
-                    setChart(path, false);
-                }
-      });
-        } else {
-            table[path].children("button").text(parseFloat(values[title]).toFixed(2));
-            setChartData(path, parseFloat(values[title]).toFixed(2));
-        }
-
-        count ++;
-    }
-}
-
-/**
- * Connection states received by the socket
- */
-socket.on('muse_connected', function(data){
-  setState("connected");
-  if(data.config != null) 
-        $("#battery i").attr("data-percentage", data.config.battery_percent_remaining).parent().attr("data-percentage", data.config.battery_percent_remaining);
-});
-
-socket.on('muse_uncertain', function(){
-  setState("uncertain");
-});
-
-socket.on('muse_disconnected', function(){
-  setState("disconnected");
-})
-
-socket.on('disconnect', function(){
-  setState("disconnected");
-});
-
-socket.on('connected', function (data) {
-  if( data.connected ) {
-    setState("connected");
-        if(data.config != null) 
-            $("#battery i").attr("data-percentage", data.config.battery_percent_remaining).parent().attr("data-percentage", data.config.battery_percent_remaining);
-  }
-});
-
-/**
- * Specific data received by the socket
+ *3D 
  */
 
-// Set the readability values
-socket.on('/muse/elements/horseshoe', function(data){
+var scene, camera, renderer;
+var geometry, material, mesh;
+var Alpha;
+// alpha 
+var al1; 
+var al2; 
+var ar1; 
+var ar2; 
 
-  var excellence_counter = 0;
-  for(var i in data.values) {
-    $("#readability-bar-" + i).css("width", ( 100 / data.values[i] - (( 100 / data.values[i] <= 25 ) ? 25 : 0) ) + "%");
-    if(data.values[i] <= 1) {
-      excellence_counter++;
-    }
-  }
-  if(excellence_counter > 3) {
-    $("#readability").addClass("excellent");
-  } else {
-    $("#readability").removeClass("excellent");
-  }
+init();
+setup();
+/*animate();
+*/ 
+function init() {
+ 
+    scene = new THREE.Scene();
+ 
+    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.z = 1000;
+ 
+    geometry = new THREE.BoxGeometry( 200, 200, 200 );
+    material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+ 
+    mesh = new THREE.Mesh( geometry, material );
+    scene.add( mesh );
+ 
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+ 
+    document.body.appendChild( renderer.domElement );
+     
+}
+ 
+function setup(){
+  Alpha = function(dataArray) {
+    // data = [0, 1, .2, .3];
+    this.al1 = dataArray[0];
+    this.al2 = dataArray[1];
+    this.ar1 = dataArray[2];
+    this.ar2 = dataArray[3];
+    console.log(this.al1);
+  };
+  var lastTime = performance.now(), //  
+      threshold = 1000 / 60; // 1/60 seconds
 
-});
+  socket.on('/muse/elements/alpha_session_score', function (data){
+    var nextTime = performance.now();
+    var lag = (nextTime - lastTime);
+    console.log(nextTime, ":", data.values[0])
 
-// Get the battery value
-socket.on('/muse/batt', function(data){
-  // Set percentage values
-    $("#battery i").attr("data-percentage", Math.round(data.values[0] / 100)).parent().attr("data-percentage",  Math.round(data.values[0] / 100));
+    // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
+    if (lag >= threshold) {
+      // reset lastTime
+      lastTime = nextTime;
 
-});
+      var brainData = new Alpha(data.values); // look inside data for values, grabs array 
 
-// Get EEG values
-socket.on('/muse/eeg', function(data){
+      mesh.rotation.x += brainData.al1;
+      mesh.rotation.y += brainData.al2;
 
-    setTableValue(data.path, {
-        'EEG: Left Ear' : data.values[0],
-        'EEG: Left Forehead' : data.values[1],
-        'EEG: Right Forehead' : data.values[2],
-        'EEG: Right Ear' : data.values[3]
-    });
+      // render
+      renderer.render( scene, camera );
 
-});
+    } 
+        
 
-// Get ACC values
-socket.on('/muse/acc', function(data){
+  });  
 
-    setTableValue(data.path, {
-        'Accelerometer: Forward and backward position' : data.values[0],
-        'Accelerometer: Up and down position' : data.values[1],
-        'Accelerometer: Left and right position' : data.values[2],
-    });
-
-});
-
-socket.on('/muse/elements/blink', function(data){
-
-    setTableValue(data.path, {
-        'Eye blink' : data.values
-    });
-
-});
-
-socket.on('/muse/elements/jaw_clench', function(data){
-
-    setTableValue(data.path, {
-        'Jaw Clench' : data.values
-    });
-
-});
-
-socket.on('/muse/elements/delta_session_score', function(data){
-
-    setTableValue(data.path, {
-        'Band Power Session Score: Delta' : data.values
-    });
-
-});
-
-socket.on('/muse/elements/theta_session_score', function(data){
-
-    setTableValue(data.path, {
-        'Band Power Session Score: Theta' : data.values
-    });
-
-});
-
-
-socket.on('/muse/elements/alpha_session_score', function(data){
-
-    setTableValue(data.path, {
-        'Band Power Session Score: Alpha' : data.values
-    });
-
-});
+} 
+/*function animate() {
+ 
+    requestAnimationFrame( animate );
+ 
+    
+ 
+    
+ 
+}*/
 
 
-socket.on('/muse/elements/beta_session_score', function(data){
-    setTableValue(data.path, {
-        'Band Power Session Score: Beta' : data.values
-    });
-    // console.log(data.values)
-    // if (data.values = 1){
-    //   console.log(data.values)
-    // }
 
-});
-
-socket.on('/muse/elements/gamma_session_score', function(data){
-
-    setTableValue(data.path, {
-        'Band Power Session Score: Gamma' : data.values
-    });
-
-});
 
 // Now ask for all the data
 socket.emit('setPaths',
