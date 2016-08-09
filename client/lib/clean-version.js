@@ -1,83 +1,141 @@
-var brainData; 
-// eeg
-var el1; 
-var el2; 
-var er1; 
-var er2; 
+/**
+ *  Node Muse
+ *  Web Gui example
+ *
+ *  This is the frontend socket script connecting to the
+ *  backend server and subscribing to its information.
+ *  ---------------------------------------------------
+ *  @package    node-muse
+ *  @author     Jimmy Aupperlee <j.aup.gt@gmail.com>
+ *  @license    GPLv3
+ *  @version    1.0.0
+ *  @since      File available since Release 0.1.0
+ */
+
+
+/**
+ * Quick settings
+ */
+
+// Minimum update interval for the charts
+var update_interval = 200;
+
+/**
+ * Required modules
+ */
+
+var socket = io.connect('http://localhost:8080');
+
+/**
+ *3D 
+ */
+
+var scene, camera, renderer;
+var geometry, material, mesh;
+var Alpha;
 // alpha 
 var al1; 
 var al2; 
 var ar1; 
 var ar2; 
-// alpha colors
-var aR;
-var aG;
-var aB;
-var aX; 
 
-var EEG = function(dataArray) {
-  // data = [0, 1, .2, .3];
-  el1 = dataArray[0];
-  el2 = dataArray[1];
-  er1 = dataArray[2];
-  er2 = dataArray[3];
-};
-
-var Alpha = function(dataArray) {
-  // data = [0, 1, .2, .3];
-  al1 = dataArray[0];
-  al2 = dataArray[1];
-  ar1 = dataArray[2];
-  ar2 = dataArray[3];
-};
-
-  
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-
-  socket.on('/muse/eeg', function(data){
-
-    brainData = new EEG(data.values);
-    console.log(data.values)
-  });
+init();
+setup();
+/*animate();
+*/ 
+function init() {
+ 
+    scene = new THREE.Scene();
+ 
+    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.z = 1000;
+ 
+    geometry = new THREE.BoxGeometry( 200, 200, 200 );
+    material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+ 
+    mesh = new THREE.Mesh( geometry, material );
+    scene.add( mesh );
+ 
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+ 
+    document.body.appendChild( renderer.domElement );
+     
+}
+ 
+function setup(){
+  Alpha = function(dataArray) {
+    // data = [0, 1, .2, .3];
+    this.al1 = dataArray[0];
+    this.al2 = dataArray[1];
+    this.ar1 = dataArray[2];
+    this.ar2 = dataArray[3];
+    console.log(this.al1);
+  };
+  var lastTime = performance.now(), //  
+      threshold = 1000 / 60; // 1/60 seconds
 
   socket.on('/muse/elements/alpha_session_score', function (data){
+    var nextTime = performance.now();
+    var lag = (nextTime - lastTime);
+    console.log(nextTime, ":", data.values[0])
 
-    brainData = new Alpha(data.values); // look inside data for values, grabs array 
+    // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
+    if (lag >= threshold) {
+      // reset lastTime
+      lastTime = nextTime;
 
-  });   
-}
+      var brainData = new Alpha(data.values); // look inside data for values, grabs array 
 
-function draw() {
-  background(200); 
-  
-  // eegBez(aR, aG, aB, aX);
-  alphaCol();
-  // ellipse(width/2,height/2,al1/10,ar2/10)
-  // bezier(0,height/2, al1*width, al2*height, ar1*width, ar2*height, width, height/2);
-  // console.log(al1,al2,ar1,ar2)
-}
+      mesh.rotation.x += brainData.al1;
+      mesh.rotation.y += brainData.al2;
+
+      // render
+      renderer.render( scene, camera );
+
+    } 
+        
+
+  });  
+
+} 
+/*function animate() {
+ 
+    requestAnimationFrame( animate );
+ 
+    
+ 
+    
+ 
+}*/
 
 
 
-var eegBez = function(r,g,b,x){
-  aX1 = map(el1, 0, 1682, 0, width);
-  aY1 = map(el2, 0, 1682, 0, height);
-  aX2 = map(er1, 0, 1682, 0, width);
-  aY2 = map(er2, 0, 1682, 0, height);
-  noFill();
-  strokeWeight(5);
-  stroke(r,g,b,x);
-  bezier(0,height/2, aX1, aY1, aX2, aY2, width, height/2); 
-  alpha(r,g,b,x);
-}
-  
-var alphaCol = function(){
-  aR = map(al1, 0, 1, 0, 255);
-  aG = map(al2, 0, 1, 0, 255);
-  aB = map(ar1, 0, 1, 0, 255);
-  aX = map(ar2, 0, 1, 0, 100); 
-  var c = color(aR, aG, aB, aX);
-  fill(c);
-  ellipse(width/2,height/2,100,100);
-}  
+
+// Now ask for all the data
+socket.emit('setPaths',
+    [
+      '/muse/acc',
+        '/muse/eeg',
+        '/muse/batt',
+        '/muse/elements/horseshoe',
+        '/muse/elements/blink',
+        '/muse/elements/jaw_clench',
+        '/muse/elements/low_freqs_absolute',
+        '/muse/elements/delta_absolute',
+        '/muse/elements/theta_absolute',
+        '/muse/elements/alpha_absolute',
+        '/muse/elements/beta_absolute',
+        '/muse/elements/gamma_absolute',
+        '/muse/elements/delta_relative',
+        '/muse/elements/theta_relative',
+        '/muse/elements/alpha_relative',
+        '/muse/elements/beta_relative',
+        '/muse/elements/gamma_relative',
+        '/muse/elements/delta_session_score',
+        '/muse/elements/theta_session_score',
+        '/muse/elements/alpha_session_score',
+        '/muse/elements/beta_session_score',
+        '/muse/elements/gamma_session_score'
+    ]
+);
