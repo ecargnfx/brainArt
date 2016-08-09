@@ -1,4 +1,21 @@
+/**
+ *  Node Muse
+ *  Web Gui example
+ *
+ *  This is the frontend socket script connecting to the
+ *  backend server and subscribing to its information.
+ *  ---------------------------------------------------
+ *  @package    node-muse
+ *  @author     Jimmy Aupperlee <j.aup.gt@gmail.com>
+ *  @license    GPLv3
+ *  @version    1.0.0
+ *  @since      File available since Release 0.1.0
+ */
 
+
+/**
+ * Quick settings
+ */
 
 // Minimum update interval for the charts
 var update_interval = 200;
@@ -18,8 +35,6 @@ var gui, guiControl, object
 var mobile = false;
 var texture
 var Alpha;
-var mappedAlpha2 = 0;
-var mappedAlpha3 = 0;
 init();
 setup();
 // render();
@@ -65,16 +80,13 @@ function init() {
     window.addEventListener('resize', onWindowResize, false);
 }
 
-// function changeGeometry() {
-//     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
-//     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
-//     object.geometry = sgeometry;
-//     object.material.color = new THREE.Color(0xFFFFFF*Math.random())
-// }
+function changeGeometry() {
+    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
+    originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
+    object.geometry = sgeometry;
+    object.material.color = new THREE.Color(0xFFFFFF*Math.random())
+}
 
-function map_range(value, low1, high1, low2, high2) {
-    return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
-};
 
 function setup() {
     var cubeMap = getCubeMap(3)
@@ -107,27 +119,28 @@ function setup() {
       this.al2 = dataArray[1];
       this.ar1 = dataArray[2];
       this.ar2 = dataArray[3];
+      console.log(this.al1);
     }; 
                    
     // central object
 
-    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 6, 15);
+    originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 6, 15);
     object = new THREE.Mesh(sgeometry, smaterial);
     scene.add(object);
 
     // light
     var light = new THREE.AmbientLight(0xFFFFFF);
     scene.add(light);
-  }
+}
 
-  function remove(object) {
-      scene.remove(object)
-  }
+function remove(object) {
+    scene.remove(object)
+}
 
 
-  var num = 0
-  var time = 0;
+var num = 0
+var time = 0;
 
 
 
@@ -145,31 +158,26 @@ function setup() {
       lastTime = nextTime;
 
       var brainData = new Alpha(data.values); // look inside data for values, grabs array 
-      
-      mappedAlpha2 = map_range(brainData.ar2, 0, 1, 0, 20);      
-      mappedAlpha3 = map_range(brainData.al1, 0, 1, 0, 20); //works
-      
-                // time += 1
-                // texture.offset.y = time / 10000;
-                // for (var i = 0; i < sgeometry.vertices.length; i++) {
-                //     var v = sgeometry.vertices[i]
-                //     var ov = originalgGeometry.vertices[i];
-                //     var sin = (Math.sin(time / 100 + i / 10) + 1) / 2
-                //     var random = ((Math.random() * 0.2) + 0);
-                //     v.x = ov.x + brainData.al1 * random;
-                //     v.y = ov.y + brainData.al1 * random;
-                //     v.z = ov.z + brainData.al1 * random;
-                // }
-                // // object.rotation.y += brainData.al2;         
+      function map_range(value, low1, high1, low2, high2) {
+          return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+      };      
+      var mappedAlpha = map_range(brainData.al2, 0, 1, 0, 20);
+      // console.log(mappedAlpha);
+                time += 1
+                texture.offset.y = time / 10000;
+                for (var i = 0; i < sgeometry.vertices.length; i++) {
+                    var v = sgeometry.vertices[i]
+                    var ov = originalgGeometry.vertices[i];
+                    var sin = (Math.sin(time / 100 + i / 10) + 1) / 2
+                    var random = ((Math.random() * 0.2) + 0);
+                    v.x = ov.x + brainData.al1 * random;
+                    v.y = ov.y + brainData.al1 * random;
+                    v.z = ov.z + brainData.al1 * random;
+                }
+                // object.rotation.y += brainData.al2;
+          
 
-                // sgeometry.verticesNeedUpdate = true;
-
-
-    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    object.geometry = sgeometry;
-    // object.material.color = new THREE.Color(0xFFFFFF*Math.random())
-    console.log(mappedAlpha2, mappedAlpha3)
+                sgeometry.verticesNeedUpdate = true;
 
                 controls.update();
                 if (mobile) {
@@ -177,6 +185,7 @@ function setup() {
                     camera.translateZ(10);
                 }
                 renderer.render(scene, camera);
+
     } 
         
 
