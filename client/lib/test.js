@@ -1,17 +1,6 @@
-
-
-// Minimum update interval for the charts
-var update_interval = 200;
-
-/**
- * Required modules
- */
-
 var socket = io.connect('http://localhost:8080');
 
-/**
- *3D 
- */
+// 3D 
 
 var camera, scene, renderer, material, geometry, sgeometry, originalgGeometry;
 var gui, guiControl, object
@@ -20,9 +9,11 @@ var texture
 var Alpha;
 var mappedAlpha2 = 0;
 var mappedAlpha3 = 0;
+
 init();
 setup();
 // render();
+
 function init() {
     // renderer
     renderer = new THREE.WebGLRenderer({antialias: true});
@@ -66,8 +57,8 @@ function init() {
 }
 
 // function changeGeometry() {
-//     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
-//     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(brainData.al2), Math.round(brainData.al2));
+//     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(alphaData.al2), Math.round(alphaData.al2));
+//     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(alphaData.al2), Math.round(alphaData.al2));
 //     object.geometry = sgeometry;
 //     object.material.color = new THREE.Color(0xFFFFFF*Math.random())
 // }
@@ -119,81 +110,94 @@ function setup() {
     // light
     var light = new THREE.AmbientLight(0xFFFFFF);
     scene.add(light);
-  }
-
-  function remove(object) {
-      scene.remove(object)
-  }
+}
 
 
-  var num = 0
-  var time = 0;
+function remove(object) {
+    scene.remove(object)
+}
+
+
+var num = 0
+var time = 0; // used for shimmer
 
 
 
-  var lastTime = performance.now(), //  
-      threshold = 1000 / 60; // 1/60 seconds
+var lastTime = performance.now(), //  
+    threshold = 1000 / 60; // 1/60 seconds
 
-  socket.on('/muse/elements/alpha_session_score', function (data){
-    var nextTime = performance.now();
-    var lag = (nextTime - lastTime);
-    // console.log(nextTime, ":", data.values[0])
 
-    // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
-    if (lag >= threshold) {
-      // reset lastTime
-      lastTime = nextTime;
 
-      var brainData = new Alpha(data.values); // look inside data for values, grabs array 
-      
-      mappedAlpha2 = map_range(brainData.ar2, 0, 1, 0, 20);      
-      mappedAlpha3 = map_range(brainData.al1, 0, 1, 0, 20); //works
-      
-                // time += 1
-                // texture.offset.y = time / 10000;
-                // for (var i = 0; i < sgeometry.vertices.length; i++) {
-                //     var v = sgeometry.vertices[i]
-                //     var ov = originalgGeometry.vertices[i];
-                //     var sin = (Math.sin(time / 100 + i / 10) + 1) / 2
-                //     var random = ((Math.random() * 0.2) + 0);
-                //     v.x = ov.x + brainData.al1 * random;
-                //     v.y = ov.y + brainData.al1 * random;
-                //     v.z = ov.z + brainData.al1 * random;
-                // }
-                // // object.rotation.y += brainData.al2;         
 
-                // sgeometry.verticesNeedUpdate = true;
+socket.on('/muse/acc', function (data){
+  var accFB = data.values[0];
+  var accUD = data.values[1];
+  var accLR = data.values[2];
+});
+
+socket.on('/muse/elements/experimental/concentration', function (data){
+  var focusData = data.values;
+  if (focusData > 0.5) {
+    object.material.color = new THREE.Color(0xFF0000);  
+  } else{
+    object.material.color = new THREE.Color(0xFFFFFF);
+  };  
+});
+
+socket.on('/muse/elements/beta_session_score', function (data){
+  var nextTime = performance.now();
+  var lag = (nextTime - lastTime);
+  // console.log(nextTime, ":", data.values[0])
+
+  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
+  if (lag >= threshold) {
+    // reset lastTime
+    lastTime = nextTime;
+
+    var alphaData = new Alpha(data.values); // look inside data for values, grabs array 
+    
+    mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 20);      
+    mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 20); //works
+    
+    // time += 1
+    // texture.offset.y = time / 10000;
+    // for (var i = 0; i < sgeometry.vertices.length; i++) {
+    //     var v = sgeometry.vertices[i]
+    //     var ov = originalgGeometry.vertices[i];
+    //     var sin = (Math.sin(time / 100 + i / 10) + 1) / 2
+    //     var random = ((Math.random() * 0.2) + 0);
+    //     v.x = ov.x + alphaData.al1 * random;
+    //     v.y = ov.y + alphaData.al1 * random;
+    //     v.z = ov.z + alphaData.al1 * random;
+    // }
+    // // object.rotation.y += alphaData.al2;         
+
+    // sgeometry.verticesNeedUpdate = true;
 
 
     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object.geometry = sgeometry;
     // object.material.color = new THREE.Color(0xFFFFFF*Math.random())
-    console.log(mappedAlpha2, mappedAlpha3)
+    // if (mappedAlpha2 > 15 && mappedAlpha3 > 15) {
+    //   object.material.color = new THREE.Color(0xFF0000);  
+    // } else{
+    //   object.material.color = new THREE.Color(0xFFFFFF);
+    // };
+    // console.log(mappedAlpha2, mappedAlpha3)
 
-                controls.update();
-                if (mobile) {
-                    camera.position.set(0, 0, 0)
-                    camera.translateZ(10);
-                }
-                renderer.render(scene, camera);
-    } 
-        
+              controls.update();
+              if (mobile) {
+                  camera.position.set(0, 0, 0)
+                  camera.translateZ(10);
+              }
+              renderer.render(scene, camera);
+  } 
+      
 
-  });  
-
-
+});  
 
 
-/*function animate() {
- 
-    requestAnimationFrame( animate );
- 
-    
- 
-    
- 
-}*/
 
 
 
@@ -204,6 +208,7 @@ socket.emit('setPaths',
       '/muse/acc',
         '/muse/eeg',
         '/muse/batt',
+        '/muse/elements/experimental/concentration',
         '/muse/elements/horseshoe',
         '/muse/elements/blink',
         '/muse/elements/jaw_clench',

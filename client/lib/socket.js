@@ -291,13 +291,13 @@ socket.on('/muse/elements/jaw_clench', function(data){
 
 });
 
-socket.on('/muse/elements/low_freqs_absolute', function(data){
+// socket.on('/muse/elements/low_freqs_absolute', function(data){
 
-    setTableValue(data.path, {
-        'Absolute Band Powers: Low Frequency' : data.values
-    });
+//     setTableValue(data.path, {
+//         'Absolute Band Powers: Low Frequency' : data.values
+//     });
 
-});
+// });
 
 socket.on('/muse/elements/delta_absolute', function(data){
 
@@ -419,12 +419,21 @@ socket.on('/muse/elements/gamma_session_score', function(data){
 
 });
 
+socket.on('/muse/elements/experimental/concentration', function(data){
+
+    setTableValue(data.path, {
+        'Concentrate' : data.values
+    });
+
+});
+
 // Now ask for all the data
 socket.emit('setPaths',
     [
     	'/muse/acc',
         '/muse/eeg',
         '/muse/batt',
+        '/muse/elements/experimental/concentration',
         '/muse/elements/horseshoe',
         '/muse/elements/blink',
         '/muse/elements/jaw_clench',
