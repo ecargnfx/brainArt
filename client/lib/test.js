@@ -28,21 +28,6 @@ function init() {
     camera.focalLength = camera.position.distanceTo(scene.position);
     scene.add(camera)
     // controls
-    // gui = new dat.GUI();
-    // guiControl = new function () {
-    //     this.shimmer = 0.1;
-    //     this.p = 5;
-    //     this.q = 5;
-    // }
-
-    // gui.add(guiControl, 'shimmer', 0, 0.5);
-    // gui.add(guiControl, 'p', 0, 20).onChange(function () {
-    //     changeGeometry();
-    // });
-    // gui.add(guiControl, 'q', 0, 20).onChange(function () {
-    //     changeGeometry();
-    // });
-
     controls = new THREE.OrbitControls(camera);
     // controls.autoRotate = true;
     if (WEBVR.isAvailable() === true) {
@@ -56,12 +41,6 @@ function init() {
     window.addEventListener('resize', onWindowResize, false);
 }
 
-// function changeGeometry() {
-//     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(alphaData.al2), Math.round(alphaData.al2));
-//     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, Math.round(alphaData.al2), Math.round(alphaData.al2));
-//     object.geometry = sgeometry;
-//     object.material.color = new THREE.Color(0xFFFFFF*Math.random())
-// }
 
 function map_range(value, low1, high1, low2, high2) {
     return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
@@ -118,15 +97,9 @@ function remove(object) {
 }
 
 
-var num = 0
-var time = 0; // used for shimmer
 
-
-
-var lastTime = performance.now(), //  
+var lastTime = performance.now(),   
     threshold = 1000 / 60; // 1/60 seconds
-
-
 
 
 socket.on('/muse/acc', function (data){
@@ -158,48 +131,19 @@ socket.on('/muse/elements/beta_session_score', function (data){
     
     mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 20);      
     mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 20); //works
-    
-    // time += 1
-    // texture.offset.y = time / 10000;
-    // for (var i = 0; i < sgeometry.vertices.length; i++) {
-    //     var v = sgeometry.vertices[i]
-    //     var ov = originalgGeometry.vertices[i];
-    //     var sin = (Math.sin(time / 100 + i / 10) + 1) / 2
-    //     var random = ((Math.random() * 0.2) + 0);
-    //     v.x = ov.x + alphaData.al1 * random;
-    //     v.y = ov.y + alphaData.al1 * random;
-    //     v.z = ov.z + alphaData.al1 * random;
-    // }
-    // // object.rotation.y += alphaData.al2;         
-
-    // sgeometry.verticesNeedUpdate = true;
-
 
     sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object.geometry = sgeometry;
-    // object.material.color = new THREE.Color(0xFFFFFF*Math.random())
-    // if (mappedAlpha2 > 15 && mappedAlpha3 > 15) {
-    //   object.material.color = new THREE.Color(0xFF0000);  
-    // } else{
-    //   object.material.color = new THREE.Color(0xFFFFFF);
-    // };
-    // console.log(mappedAlpha2, mappedAlpha3)
 
-              controls.update();
-              if (mobile) {
-                  camera.position.set(0, 0, 0)
-                  camera.translateZ(10);
-              }
-              renderer.render(scene, camera);
-  } 
-      
-
+    controls.update();
+    if (mobile) {
+        camera.position.set(0, 0, 0)
+        camera.translateZ(10);
+    }
+    renderer.render(scene, camera);
+  }       
 });  
-
-
-
-
 
 
 // Now ask for all the data

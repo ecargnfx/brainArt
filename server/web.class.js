@@ -22,6 +22,62 @@
 var express = require('express'),
     path = require('path');
 
+var MongoClient = require('mongodb').MongoClient; // mongodb api
+var assert = require('assert'); // for testing
+var url = 'mongodb://localhost:27017/test'; // type of server, location, what port, and specific location
+MongoClient.connect(url, function(err, db) {
+  assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out
+  console.log("Connected correctly to Mongo server.");
+  db.close();
+});    
+
+var insertDocument = function(db, callback) {
+   db.collection('restaurants').insertOne( {
+      "address" : {
+         "street" : "2 Avenue",
+         "zipcode" : "10075",
+         "building" : "1480",
+         "coord" : [ -73.9557413, 40.7720266 ]
+      },
+      "borough" : "Manhattan",
+      "cuisine" : "Italian",
+      "grades" : [
+         {
+            "date" : new Date("2014-10-01T00:00:00Z"),
+            "grade" : "A",
+            "score" : 11
+         },
+         {
+            "date" : new Date("2014-01-16T00:00:00Z"),
+            "grade" : "B",
+            "score" : 17
+         }
+      ],
+      "name" : "Vella",
+      "restaurant_id" : "41704620"
+   }, function(err, result) {
+    assert.equal(err, null);
+    console.log("Inserted a document into the restaurants collection.");
+    callback();
+  });
+};
+
+insertDocument();
+var MongoClient = {
+    connect: function(url, callback){
+        tell the MongoClient to connect to `url`
+        once connected, returns either a database connection or error msg
+        var error = null;
+        if db connects: store database connection in variable `gotData`
+        if error exists: rewite store `error` variable with error message  
+        if (typeof callback === "function"){
+            callback(error, gotData);
+        } else {
+            console.log("error: callback should be a function")
+        }
+            
+    }
+}
 /*
  |--------------------------------------------------------------------------
  | The 'constructor'
