@@ -107,6 +107,26 @@ socket.on('/muse/acc', function (data){
   var accUD = data.values[1];
   var accLR = data.values[2];
 });
+/*
+orderList = {order: delicicous food stuffs!}
+
+function waiter(order, cb){
+  every 10 seconds check the kitchen to see if order is ready
+  if not ready
+    chill
+  if ready
+    var food = orderList[order]
+    cb(food)
+
+}
+
+waiter('steak', function(food){
+  steal food; quit job
+})
+waiter('steak', function(food){
+  bring food to customer
+})
+*/
 
 socket.on('/muse/elements/experimental/concentration', function (data){
   var focusData = data.values;
