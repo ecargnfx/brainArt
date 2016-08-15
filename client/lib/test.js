@@ -1,4 +1,8 @@
-var socket = io.connect('http://localhost:8080');
+var serverUrl = 'http://localhost:8080';
+
+var socket = io.connect(serverUrl);
+
+console.log('are we even running this code');
 
 // 3D 
 
@@ -59,7 +63,8 @@ function setup() {
     });
     var skyBox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100), skyBoxMaterial);
     scene.add(skyBox);
-    texture = new THREE.TextureLoader().load("assets/textures/watercolor-blue.jpg");
+    var img = "assets/textures/watercolor-blue.jpg";
+    texture = new THREE.TextureLoader().load(img);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(2, 2);
@@ -85,6 +90,29 @@ function setup() {
     originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object = new THREE.Mesh(sgeometry, smaterial);
     scene.add(object);
+    debugger
+
+    // create data obj
+    var dataObject = { 
+      geometry: sgeometry,
+      material: {
+        shading: THREE.FlatShading,
+        side: THREE.DoubleSide
+        texture: {
+          img: img
+        },
+      }
+      
+    };
+
+    // save obj to DB by POSTing to node.js server
+    $.post( serverUrl, dataObject, function(data){
+      console.log(data);
+    });
+
+    // reconstitute obj from db
+    getData(dataObject, cubeMap);
+    
 
     // light
     var light = new THREE.AmbientLight(0xFFFFFF);
@@ -94,6 +122,22 @@ function setup() {
 
 function remove(object) {
     scene.remove(object)
+}
+
+function getData(dataObject, cubeMap){
+  $.get(serverUrl, dataObject, function(data){
+    debugger
+    // what does data look like
+    // make an obj variable from data
+    var texture = new THREE.TextureLoader().load(obj.material.texture.img); 
+    var material = new THREE.MeshStandardMaterial({
+      envMap: cubeMap,
+      map: texture,
+      shading: obj.material.shading,
+      side: obj.material.side
+    });
+    new THREE.Mesh(obj.geometry, material);
+  }, 'JSON');
 }
 
 
@@ -107,26 +151,7 @@ socket.on('/muse/acc', function (data){
   var accUD = data.values[1];
   var accLR = data.values[2];
 });
-/*
-orderList = {order: delicicous food stuffs!}
 
-function waiter(order, cb){
-  every 10 seconds check the kitchen to see if order is ready
-  if not ready
-    chill
-  if ready
-    var food = orderList[order]
-    cb(food)
-
-}
-
-waiter('steak', function(food){
-  steal food; quit job
-})
-waiter('steak', function(food){
-  bring food to customer
-})
-*/
 
 socket.on('/muse/elements/experimental/concentration', function (data){
   var focusData = data.values;
