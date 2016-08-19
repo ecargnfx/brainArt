@@ -2,6 +2,7 @@ var socket = io.connect('http://localhost:8080');
 
 // 3D 
 var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry;
+var objectMaterial1, objectMaterial2;
 var gui, guiControl, object
 var mobile = false;
 var texture
@@ -28,19 +29,19 @@ function remove(object) {
 
 function init() {
     // renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.autoClear = false;
-  renderer.setClearColor(0x000000, 0.0);
-  document.body.appendChild(renderer.domElement);
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.autoClear = false;
+    renderer.setClearColor(0x000000, 0.0);
+    document.body.appendChild(renderer.domElement);
     // scene
     scene = new THREE.Scene();
     // camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.x = 10;
-    camera.position.y = 5;
-    camera.position.z = 3;
+    camera.position.y = 1;
+    camera.position.z = 8;
     camera.lookAt(scene.position);
     // controls
     controls = new THREE.OrbitControls(camera);
@@ -63,12 +64,20 @@ function setup() {
     // texture.wrapS = THREE.RepeatWrapping;
     // texture.wrapT = THREE.RepeatWrapping;
     // texture.repeat.set(2, 2);
-    smaterial = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        // wireframe: true,
-        // // side: THREE.DoubleSide,         
-        // transparent: true, 
-        // opacity: 1
+
+
+    objectMaterial1 = new THREE.MeshStandardMaterial({
+
+        shading: THREE.FlatShading,
+        side: THREE.DoubleSide,
+        transparent: true
+    });
+    objectMaterial2 = new THREE.MeshStandardMaterial({
+
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true
     });
 
     // grab alpha data
@@ -81,9 +90,9 @@ function setup() {
     }; 
                    
     // central object
-    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    object = new THREE.Mesh(sgeometry, smaterial);
+    object = new THREE.Mesh(sgeometry, objectMaterial1);
     scene.add(object);
 
     //particles
@@ -102,6 +111,10 @@ function setup() {
       mesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
       particle.add(mesh);
     }
+
+    // Helpers
+    var axis = new THREE.AxisHelper(10);
+    scene.add(axis);
 
     // light
     var ambientLight = new THREE.AmbientLight(0x9281D1 );
@@ -129,77 +142,94 @@ socket.on('/muse/acc', function (data){
   var accFB = data.values[0];
   var accUD = data.values[1];
   var accLR = data.values[2];
-  // console.log(accLR) //TODO: map accelerometer to mouse
+  // camera
+  camera.position.x = (mouseX - camera.position.x) * 0.02;
+  // console.log(accLR)
+  // console.log(camera.position.x)
+  camera.position.y = (-mouseY - camera.position.y) * 0.02;
+  // camera.position.z = (-accFB - camera.position.z) * 0.02;
+  
+  camera.lookAt(scene.position)  
 });
 
 var map  = new THREE.TextureLoader().load("assets/textures/white-fur-texture.jpg");
-var mat = new THREE.MeshPhongMaterial({
-color: 0xffffff,
-shading: THREE.FlatShading
-});
 
-var mat2 = new THREE.MeshPhongMaterial({
-color: 0xffffff,
-wireframe: true,
-side: THREE.DoubleSide
 
-});
+function save(threejsObj){
+  // POST to server with data I want saved    
+  $.post( window.location.origin, threejsObj, function(data){
+    console.log(data);
+  });  
+}
+
+function createThreeObj(passData, sgeometry){
+  return {
+    geometry: sgeometry,
+    material: {
+      color: 0xffffff,
+      shading: THREE.FlatShading,
+      side: THREE.DoubleSide,
+      texture: {
+        img: 'INSERT AN IMAGE HERE'
+      },
+    }    
+  };
+}
 
 socket.on('/muse/elements/experimental/concentration', function (data){
+  // COMMENT THIS LINE FOR DYNAMIC DATA 
+  var data = focusFixture;
 
   particle.rotation.x += 0.0000;
   particle.rotation.y -= 0.0040;
 
   var focusData = data.values;
+
   if (focusData > 0.5) {
-    // console.log(focusData)
-    // object.material.map = map;
-    // object.material.map.needsUpdate=true;
-    object.material.wireframe = false;
-    // object.material.shading = true;    
-    object.material.shading = THREE.FlatShading;
-    object.material.side = THREE.DoubleSide;
-    // debugger  
-  } else{
-    object.material.wireframe = true;
-    object.material.side = THREE.DoubleSide;
-    object.material.shading = THREE.SmoothShading;
-    // object.material.map = texture;
-  };  
-  // object.material.opacity = focusData;
-  // console.log(focusData)
+      if (object.material != objectMaterial1){
+          object.material = objectMaterial1
+      }
+   } else {
+      if (object.material != objectMaterial2)
+          object.material = objectMaterial2
+   };  
+   object.material.opacity = focusData;
+  console.log(focusData)
+  
 });
 
+
 socket.on('/muse/elements/beta_session_score', function (data){
+  // COMMENT THIS LINE FOR DYNAMIC DATA 
+  var data = dataFixture;
+
   var nextTime = performance.now();
   var lag = (nextTime - lastTime);
+  
+
   // console.log(nextTime, ":", data.values[0])
 
   // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
   if (lag >= threshold) {
 
-    // camera
-    camera.position.x = (mouseX - camera.position.x) * 0.02;
-    // console.log(mouseX)
-    // console.log(camera.position.x)
-    camera.position.y = (-mouseY - camera.position.y) * 0.02;
-    camera.position.z = 9;
-    
-    camera.lookAt(scene.position)
-
     // reset lastTime
     lastTime = nextTime;
 
     var alphaData = new Alpha(data.values); // look inside data for values, grabs array 
-    
-    mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
-    mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
-    console.log(mappedAlpha2);
-    console.log(mappedAlpha3);
 
-    sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    var mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
+    var mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
+    // console.log(mappedAlpha2);
+    // console.log(mappedAlpha3);
+
+    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object.geometry = sgeometry;
+    var saveObject = createThreeObj(data, sgeometry); 
+
+    if(mappedAlpha2 === 19.5 && mappedAlpha3 === 19.5){
+      save(saveObject);
+    } 
 
       controls.update();
       if (mobile) {
