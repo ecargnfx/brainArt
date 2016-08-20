@@ -22,6 +22,22 @@
 var express = require('express'),
     path = require('path');
 
+var MongoClient = require('mongodb').MongoClient; // mongodb api
+var assert = require('assert'); // for testing
+var url = 'mongodb://localhost:27017/test'; // type of server, location, what port, and specific location
+    
+var collectionName = 'thoughtObjects';
+
+var insertDocument = function(db, userObject, callback) {
+   db.collection(collectionName).insertOne( userObject, function(err, result) {
+    assert.equal(err, null);
+    console.log("Inserted a document into the", collectionName, "collection.");
+    callback();
+  });
+};
+
+
+
 /*
  |--------------------------------------------------------------------------
  | The 'constructor'
@@ -62,7 +78,33 @@ webClass.prototype.init = function(config) {
     this.app.use(express.static( path.resolve( __dirname + '/../client' ) ) );
 
     this.app.get('/', function (req, res) {
+        // TODO: define queryParam based on request
+        // if req is json pass in json
+        if (req.is('json')) {
+            // get json from Mongo
+            MongoClient.connect(url, function(err, db) {
+              assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out
+              console.log("Connected correctly to Mongo server.");
+              // TODO: define getDocument function with 3 parameters; user insertDocument as template
+              getDocument(db, queryParam, function(){
+                db.close();
+              });
+            });
+        }
+        // else
         res.sendfile( 'index.html');
+    });
+
+    this.app.post('/', function(req, res){
+        // TODO: define userObject based on req
+        // save req data to mongo
+        MongoClient.connect(url, function(err, db) {
+          assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out
+          console.log("Connected correctly to Mongo server.");
+          insertDocument(db, userObject, function(){
+            db.close();
+          });
+        });
     });
 
     this.io.on('connection', function (socket) {
