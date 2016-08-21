@@ -24,17 +24,33 @@ var express = require('express'),
 
 var MongoClient = require('mongodb').MongoClient; // mongodb api
 var assert = require('assert'); // for testing
+var ObjectId = require('mongodb').ObjectID;
+
 var url = 'mongodb://localhost:27017/test'; // type of server, location, what port, and specific location
     
 var collectionName = 'thoughtObjects';
 
+var bodyParser = require('body-parser');
+
 var insertDocument = function(db, userObject, callback) {
-   db.collection(collectionName).insertOne( userObject, function(err, result) {
+   userObject.timeCreated = new Date(); 
+   var collection = db.collection(collectionName).insertOne( userObject, function(err, result) {
     assert.equal(err, null);
     console.log("Inserted a document into the", collectionName, "collection.");
     callback();
   });
 };
+
+
+// var getDocument = function(db, query, callback){
+//    var cursor = db.collection(collectionName).find( query );
+//    cursor.each(function(err, doc) {
+//       assert.equal(err, null);
+//       if (doc !== null) {
+//          callback(doc);
+//       }
+//    });
+
 
 
 
@@ -56,6 +72,7 @@ var webClass = function(muse) {
     this.museDataPathsRequested = {};
 };
 
+
 /*
  |--------------------------------------------------------------------------
  | Initialize
@@ -75,34 +92,66 @@ webClass.prototype.init = function(config) {
     this.io   = require('socket.io')(this.server);
 
     // Set the client path
-    this.app.use(express.static( path.resolve( __dirname + '/../client' ) ) );
+    this.app.use(bodyParser.json()); // for parsing application/json
+    this.app.use('/assets', express.static( path.resolve( __dirname + '/../client/assets' ) ) );
+    this.app.use('/lib', express.static( path.resolve( __dirname + '/../client/lib' ) ) );
+    this.app.use('/vendor', express.static( path.resolve( __dirname + '/../client/vendor' ) ) );
 
     this.app.get('/', function (req, res) {
+      var findFunction;
+      var cursor;
         // TODO: define queryParam based on request
         // if req is json pass in json
-        if (req.is('json')) {
+
+        // console.log(req);
+        console.log(req.xhr)
+        if (req.xhr) {
             // get json from Mongo
+
+            if (req.query.hasOwnProperty('getBy') && req.query.getBy === 'most recent time stamp') {
+                // request for recent
+                findFunction = function(db) {
+
+                    return db.collection(collectionName).find().sort({"timeCreated": -1}).limit(20); 
+                }
+            }
             MongoClient.connect(url, function(err, db) {
               assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out
               console.log("Connected correctly to Mongo server.");
               // TODO: define getDocument function with 3 parameters; user insertDocument as template
-              getDocument(db, queryParam, function(){
-                db.close();
-              });
+              // getDocument(db, queryParam, function(data){
+              //   db.close();
+              //   res.send(data);
+              // });
+                var cursor = findFunction(db);
+                cursor.toArray(function(err, docs) {
+                  assert.equal(err, null);
+                  if (docs !== null) {
+                     res.send(docs);
+                  }
+                });
+
+               
             });
+        } else  {
+
+            res.sendFile( path.resolve( __dirname + '/../client/index.html' ) );
         }
         // else
-        res.sendfile( 'index.html');
+        
     });
 
     this.app.post('/', function(req, res){
         // TODO: define userObject based on req
+        var userObject = req.body; 
+        console.log(userObject)
         // save req data to mongo
         MongoClient.connect(url, function(err, db) {
           assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out
           console.log("Connected correctly to Mongo server.");
           insertDocument(db, userObject, function(){
             db.close();
+            res.send('Object saved!')
           });
         });
     });

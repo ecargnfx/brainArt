@@ -13,6 +13,7 @@
   "author": "Jimmy Aupperlee <j.aup.gt@gmail.com>",
   "license": "GPLv3",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "express": "^4.12.2",
     "mongodb": "^2.2.7",
     "node-muse": "^0.1.0",

@@ -1,5 +1,5 @@
 // Q: should this be window.location?
-var serverUrl = 'http://localhost:8080';
+var serverUrl = window.location.href;
 var socket = io.connect(serverUrl);
 
 // 3D 
@@ -158,47 +158,58 @@ socket.on('/muse/acc', function (data){
 var map  = new THREE.TextureLoader().load("assets/textures/white-fur-texture.jpg");
 
 // CREATE data obj (Q: is it the same as var dataObject?)
-// function createThreeObj(passData, sgeometry){
-//   return {
-//     geometry: sgeometry,
-//     material: objectMaterial1,
-//     // material: {
-//     //   color: 0xffffff,
-//     //   shading: THREE.SmoothShading,
-//     //   side: THREE.DoubleSide,
-//     //   wireframe: true,
-//     //   transparent: true
-//     //   texture: {
-//     //     img: 'INSERT AN IMAGE HERE'
-//     //   },
-//     // }    
-//   };
-// }
+function createThreeObj(passData, sgeometry){
+  return {
+    geometry: sgeometry,
+    material: objectMaterial1,
+    // material: {
+    //   color: 0xffffff,
+    //   shading: THREE.SmoothShading,
+    //   side: THREE.DoubleSide,
+    //   wireframe: true,
+    //   transparent: true
+    //   texture: {
+    //     img: 'INSERT AN IMAGE HERE'
+    //   },
+    // }    
+  };
+}
 
 // SAVE obj to DB by POSTing to node.js server with data I want saved    
-// function save(threejsObj){
-//   $.post( window.location.origin, threejsObj, function(data){
-//     console.log(data);
-//   });  
-// }
+function save(threejsObj){
+  $.post( window.location.origin, threejsObj, function(data){
+    console.log(data);
+  });  
+}
+
+// debugger
+var threejsObj = {
+    // geometry: sgeometry,
+    material: objectMaterial1,
+}
 
 // reconstitute obj from db
-// getData(threejsObj, cubeMap);
+// getData(threejsObj);
 
-// function getData(threejsObj, cubeMap){
-//   $.get(serverUrl, threejsObj, function(data){
-//     debugger
-//     // what does data look like
-//     // make an obj variable from data
-//     // var texture = new THREE.TextureLoader().load(obj.material.texture.img); 
-//     var geometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-//     var material = new THREE.MeshStandardMaterial({
-//       shading: THREE.FlatShading,
-//       side: THREE.DoubleSide
-//     });
-//     new THREE.Mesh(geometry, material);
-//   }, 'JSON');
-// }
+var objectRequest = {
+  getBy: 'most recent time stamp'
+}
+
+getData(objectRequest);
+
+function getData(requestObject){
+  $.get(serverUrl, requestObject, function(data){
+    // what does data look like
+    // make an obj variable from data
+    // var texture = new THREE.TextureLoader().load(obj.material.texture.img); 
+  //   var geometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+  //   var material = new THREE.MeshStandardMaterial({
+  //     shading: THREE.FlatShading,
+  //     side: THREE.DoubleSide
+  //   });
+  //   new THREE.Mesh(geometry, material);
+  }, 'json');
+}
 
 socket.on('/muse/elements/experimental/concentration', function (data){
   // COMMENT THIS LINE FOR DYNAMIC DATA 
@@ -226,6 +237,7 @@ socket.on('/muse/elements/experimental/concentration', function (data){
 socket.on('/muse/elements/beta_session_score', function (data){
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = dataFixture;
+  console.log(data);
 
   var nextTime = performance.now();
   var lag = (nextTime - lastTime);
@@ -250,11 +262,12 @@ socket.on('/muse/elements/beta_session_score', function (data){
     // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object.geometry = sgeometry;
     
-    // var saveObject = createThreeObj(data, sgeometry); 
+    var saveObject = createThreeObj(data, sgeometry); 
 
-    // if(mappedAlpha2 === 19.5 && mappedAlpha3 === 19.5){
-    //   save(saveObject);
-    // } 
+    if(mappedAlpha2 > 5){
+      console.log('about to save')
+      save(saveObject);
+    } 
 
       controls.update();
       if (mobile) {
