@@ -178,11 +178,10 @@ function createThreeObj(passData, sgeometry){
 // SAVE obj to DB by POSTing to node.js server with data I want saved    
 function save(threejsObj){
   $.post( window.location.origin, threejsObj, function(data){
-    console.log(data);
+    // console.log(data);
   });  
 }
 
-// debugger
 var threejsObj = {
     // geometry: sgeometry,
     material: objectMaterial1,
@@ -211,6 +210,70 @@ function getData(requestObject){
   }, 'json');
 }
 
+socket.on('/muse/elements/beta_session_score', function (data){
+  // COMMENT THIS LINE FOR DYNAMIC DATA 
+  // var data = dataFixture;
+  
+  var nextTime = performance.now();
+  var lag = (nextTime - lastTime);
+  
+
+  // console.log(nextTime, ":", data.values[0])
+
+  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
+  if (lag >= threshold) {
+
+    // reset lastTime
+    lastTime = nextTime;
+
+    var alphaData = new Alpha(data.values); // look inside data for values, grabs array 
+
+    var mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
+    var mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
+
+    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    object.geometry = sgeometry;
+
+    alpha2 = mappedAlpha2;
+    alpha3 = mappedAlpha3;
+    
+    var saveObject = createThreeObj(data, sgeometry); 
+    
+    // console.log(data) 
+    // console.log(sgeometry)
+    // if(mappedAlpha2 > 19){
+    //   console.log('about to save')
+    //   // debugger
+    //   save(saveObject);
+    // } 
+
+      controls.update();
+      if (mobile) {
+          camera.position.set(0, 0, 0)
+          camera.translateZ(10);
+      }
+      renderer.render(scene, camera);
+  } 
+});  
+
+var alpha2;
+var alpha3;
+
+function passData(data2, data3){
+  return {
+    alpha2: data2,
+    alpha3: data3,
+  };
+  console.log(data2, data3)
+}
+
+function saveData(gotData){
+  $.post( window.location.origin, gotData, function(data){
+    console.log(data);
+  });  
+}
+
 socket.on('/muse/elements/experimental/concentration', function (data){
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = focusFixture;
@@ -229,54 +292,19 @@ socket.on('/muse/elements/experimental/concentration', function (data){
           object.material = objectMaterial2
    };  
    object.material.opacity = focusData;
-  console.log(focusData)
+  // console.log(focusData)
+
+  // if (focusData == 1) {
+  //   object.material.map = map;
+  //   object.material.map.needsUpdate=true;
+  // }
+  var brainData = passData(alpha2, alpha3);   
+  if (focusData = 1){
+    // save mappedAlpha3, mappedAlpha2, and texture
+    saveData(brainData); 
+  }
   
 });
-
-
-socket.on('/muse/elements/beta_session_score', function (data){
-  // COMMENT THIS LINE FOR DYNAMIC DATA 
-  // var data = dataFixture;
-  console.log(data);
-
-  var nextTime = performance.now();
-  var lag = (nextTime - lastTime);
-  
-
-  // console.log(nextTime, ":", data.values[0])
-
-  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
-  if (lag >= threshold) {
-
-    // reset lastTime
-    lastTime = nextTime;
-
-    var alphaData = new Alpha(data.values); // look inside data for values, grabs array 
-
-    var mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
-    var mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
-    // console.log(mappedAlpha2);
-    // console.log(mappedAlpha3);
-
-    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    object.geometry = sgeometry;
-    
-    var saveObject = createThreeObj(data, sgeometry); 
-
-    if(mappedAlpha2 > 5){
-      console.log('about to save')
-      save(saveObject);
-    } 
-
-      controls.update();
-      if (mobile) {
-          camera.position.set(0, 0, 0)
-          camera.translateZ(10);
-      }
-      renderer.render(scene, camera);
-  } 
-});  
 
 // Ask for all the data
 socket.emit('setPaths',
