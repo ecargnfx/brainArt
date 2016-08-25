@@ -93,6 +93,7 @@ webClass.prototype.init = function(config) {
 
     // Set the client path
     this.app.use(bodyParser.json()); // for parsing application/json
+    this.app.use(bodyParser.urlencoded({ extended: true }));
     this.app.use('/assets', express.static( path.resolve( __dirname + '/../client/assets' ) ) );
     this.app.use('/lib', express.static( path.resolve( __dirname + '/../client/lib' ) ) );
     this.app.use('/vendor', express.static( path.resolve( __dirname + '/../client/vendor' ) ) );
@@ -144,7 +145,8 @@ webClass.prototype.init = function(config) {
     this.app.post('/', function(req, res){
         // TODO: define userObject based on req
         var userObject = req.body; 
-        console.log(userObject)
+        console.log('entire request', req);
+        console.log('about to save to mongo:', userObject)
         // save req data to mongo
         MongoClient.connect(url, function(err, db) {
           assert.equal(null, err); // if err is null, then continue. if error is not null, then freak out

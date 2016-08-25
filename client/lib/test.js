@@ -16,6 +16,12 @@ var mouseX = 0, mouseY = 0;
 init();
 setup();
 
+function reset(){
+  recordState = 0;
+  console.log("reset success")
+}
+
+
 function mousemove(e) {
     mouseX = e.clientX - window.innerWidth / 2
     mouseY = e.clientY - window.innerHeight / 2
@@ -99,8 +105,7 @@ function setup() {
     scene.add(object);
 
     //particles
-    particle = new THREE.Object3D();
-    scene.add(particle);
+    particles = new THREE.Object3D();
 
     var partGeo = new THREE.TetrahedronGeometry(2, 0);
     var partMat = new THREE.MeshPhongMaterial({
@@ -112,12 +117,22 @@ function setup() {
       mesh.position.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
       mesh.position.multiplyScalar(90 + (Math.random() * 700));
       mesh.rotation.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
-      particle.add(mesh);
+      particles.add(mesh);
     }
+
+    var geom = new THREE.Geometry()
+    for (var j = 0; j < particles.children.length; j++) {
+        particles.children[j].updateMatrix();
+        geom.merge(particles.children[j].geometry, particles.children[j].matrix);
+    }
+    particles = new THREE.Mesh(geom, partMat);
+    scene.add(particles)    
+
+    TweenMax.to(particles.scale,5,{x:0.1,y:0.1,z:0.1});
 
     // Helpers
     var axis = new THREE.AxisHelper(10);
-    scene.add(axis);
+    // scene.add(axis);
 
     // light
     var ambientLight = new THREE.AmbientLight(0x9281D1 );
@@ -145,6 +160,8 @@ socket.on('/muse/acc', function (data){
   var accFB = data.values[0];
   var accUD = data.values[1];
   var accLR = data.values[2];
+
+  // var mappedAcc = map_range(alphaData.ar2, 0, 1, 0, 19.5);
   // camera
   camera.position.x = (mouseX - camera.position.x) * 0.02;
   // console.log(accLR)
@@ -211,6 +228,7 @@ function getData(requestObject){
 }
 
 socket.on('/muse/elements/beta_session_score', function (data){
+
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = dataFixture;
   
@@ -237,6 +255,7 @@ socket.on('/muse/elements/beta_session_score', function (data){
 
     alpha2 = mappedAlpha2;
     alpha3 = mappedAlpha3;
+    // 
     
     var saveObject = createThreeObj(data, sgeometry); 
     
@@ -259,6 +278,7 @@ socket.on('/muse/elements/beta_session_score', function (data){
 
 var alpha2;
 var alpha3;
+var recordState = 0;
 
 function passData(data2, data3){
   return {
@@ -269,20 +289,21 @@ function passData(data2, data3){
 }
 
 function saveData(gotData){
+  console.log('about to save:', gotData);
   $.post( window.location.origin, gotData, function(data){
-    console.log(data);
-  });  
+    console.log('savedData:', data);
+  }, 'json');  
 }
 
 socket.on('/muse/elements/experimental/concentration', function (data){
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = focusFixture;
 
-  particle.rotation.x += 0.0000;
-  particle.rotation.y -= 0.0040;
+  particles.rotation.x += 0.0000;
+  particles.rotation.y -= 0.0040;
 
   var focusData = data.values;
-
+  console.log(focusData)
   if (focusData > 0.5) {
       if (object.material != objectMaterial1){
           object.material = objectMaterial1
@@ -291,20 +312,26 @@ socket.on('/muse/elements/experimental/concentration', function (data){
       if (object.material != objectMaterial2)
           object.material = objectMaterial2
    };  
-   object.material.opacity = focusData;
+   object.material.opacity = focusData + .1;
   // console.log(focusData)
 
   // if (focusData == 1) {
   //   object.material.map = map;
   //   object.material.map.needsUpdate=true;
   // }
+
   var brainData = passData(alpha2, alpha3);   
-  if (focusData = 1){
+  if (focusData === 1 && recordState === 0){
     // save mappedAlpha3, mappedAlpha2, and texture
-    saveData(brainData); 
+    saveData(brainData);
+    //TODO: button click to trigger reset function Just save the first one and stop
+    recordState = 1;
+    console.log("recordState = " + recordState);
   }
   
 });
+
+
 
 // Ask for all the data
 socket.emit('setPaths',
@@ -312,6 +339,7 @@ socket.emit('setPaths',
       '/muse/acc',
         '/muse/eeg',
         '/muse/batt',
+        '/muse/elements',
         '/muse/elements/experimental/concentration',
         '/muse/elements/horseshoe',
         '/muse/elements/blink',
