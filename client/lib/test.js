@@ -141,9 +141,9 @@ function setup() {
     var lights = [];
     lights[0] = new THREE.DirectionalLight( 0xf4d3c4, 1 );
     lights[0].position.set( 3, 0, 0 );
-    lights[1] = new THREE.DirectionalLight( 0xEF94A5, 1 );
+    lights[1] = new THREE.DirectionalLight( 0x11B9E8, 1 );
     lights[1].position.set( 1.75, 3, 0.5 );
-    lights[2] = new THREE.DirectionalLight( 0x5A5CA8, 1 );
+    lights[2] = new THREE.DirectionalLight( 0x8a00C9, 1 );
     lights[2].position.set( -1.75, -2, 0.5 );
     scene.add( lights[0] );
     scene.add( lights[1] );
@@ -323,6 +323,11 @@ socket.on('/muse/elements/experimental/concentration', function (data){
   var brainData = passData(alpha2, alpha3);   
   if (focusData === 1 && recordState === 0){
     // save mappedAlpha3, mappedAlpha2, and texture
+    object.material.color = new THREE.Color(0xFF0000);
+    // alpha2 = alpha2;
+    // alpha3 = alpha3;
+    console.log("alpha2 is" + alpha2);
+    console.log("alpha3 is" + alpha3);
     saveData(brainData);
     //TODO: button click to trigger reset function Just save the first one and stop
     recordState = 1;
