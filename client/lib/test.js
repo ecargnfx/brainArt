@@ -81,17 +81,6 @@ function setup() {
     });
     var skyBox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100), skyBoxMaterial);
     scene.add(skyBox);
-    texture = new THREE.TextureLoader().load("assets/textures/watercolor-blue.jpg");
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(2, 2);  
-
-    // var img = "assets/textures/watercolor-blue.jpg";
-    // texture = new THREE.TextureLoader().load(img);
-    // texture.wrapS = THREE.RepeatWrapping;
-    // texture.wrapT = THREE.RepeatWrapping;
-    // texture.repeat.set(2, 2);
-
 
     objectMaterial1 = new THREE.MeshStandardMaterial({
 
@@ -196,9 +185,9 @@ function setup() {
     lights[0] = new THREE.DirectionalLight( 0xf4d3c4, 1 );
     lights[0].position.set( 3, 0, 0 );
     lights[1] = new THREE.DirectionalLight( 0x11B9E8, 1 );
-    lights[1].position.set( 1.75, 3, 0.5 );
+    lights[1].position.set( -1.75, 3, 0.5 );
     lights[2] = new THREE.DirectionalLight( 0x8a00C9, 1 );
-    lights[2].position.set( -1.75, -2, 0.5 );
+    lights[2].position.set( 2, -2, 0.5 );
     scene.add( lights[0] );
     scene.add( lights[1] );
     scene.add( lights[2] );
@@ -382,7 +371,7 @@ socket.on('/muse/elements/experimental/concentration', function (data){
     // object.material.color = new THREE.Color(0xf58500);
     // alpha2 = alpha2;
     // alpha3 = alpha3;
-    TweenMax.to(particles.scale,5,{x:0.01,y:0.01,z:0.01});
+    TweenMax.to(particles.scale,3,{x:0.001,y:0.001,z:0.001});
     console.log("alpha2 is" + alpha2);
     console.log("alpha3 is" + alpha3);
     saveData(brainData);
@@ -393,6 +382,37 @@ socket.on('/muse/elements/experimental/concentration', function (data){
   
 });
 
+// socket.on('/muse/elements/delta_session_score', function(data){
+
+//     setTableValue(data.path, {
+//         'Band Power Session Score: Delta' : data.values
+//     });
+
+// });
+
+// socket.on('/muse/elements/theta_session_score', function(data){
+
+//     setTableValue(data.path, {
+//         'Band Power Session Score: Theta' : data.values
+//     });
+
+// });
+
+// socket.on('/muse/elements/beta_session_score', function(data){
+
+//     setTableValue(data.path, {
+//         'Band Power Session Score: Beta' : data.values
+//     });
+
+// });
+
+// socket.on('/muse/elements/gamma_session_score', function(data){
+
+//     setTableValue(data.path, {
+//         'Band Power Session Score: Gamma' : data.values
+//     });
+
+// });
 
 
 // Ask for all the data
