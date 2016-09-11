@@ -50,6 +50,8 @@ function getCubeMap(i) {
         {file: "sunset.jpg", size: 512},
         {file: "Above_The_Sea.jpg", size: 1024},
         {file: "bluecloud.jpg", size: 1024},
+        {file: "darkness.jpg", size: 1024},
+        {file: "starrynight2.png", size: 512},
         {file: "fog.jpg", size: 512},
         {file: "frozen.jpg", size: 512},
         {file: "op.jpg", size: 1024},
@@ -57,7 +59,6 @@ function getCubeMap(i) {
         {file: "skyboxsun25degtest.jpg", size: 1024},
         {file: "stormydays_large.jpg", size: 1024},
         {file: "violentdays_large.jpg", size: 1024},
-        {file: "darkness.jpg", size: 1024},
     ];
 
     var loader = new THREE.ImageLoader();

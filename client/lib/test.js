@@ -3,7 +3,7 @@ var serverUrl = window.location.href;
 var socket = io.connect(serverUrl);
 
 // 3D 
-var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry;
+var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry, shaderMat;
 var objectMaterial1, objectMaterial2;
 var gui, guiControl, object
 var mobile = false;
@@ -12,6 +12,8 @@ var Alpha;
 var mappedAlpha2 = 0;
 var mappedAlpha3 = 0;
 var mouseX = 0, mouseY = 0;
+var particles;
+var moveStar = -5;
 
 init();
 setup();
@@ -49,7 +51,7 @@ function init() {
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.x = 10;
     camera.position.y = 1;
-    camera.position.z = 8;
+    camera.position.z = 15;
     camera.lookAt(scene.position);
     // controls
     controls = new THREE.OrbitControls(camera);
@@ -67,6 +69,22 @@ function init() {
 }
 
 function setup() {
+    var cubeMap = getCubeMap(3)
+    var cubeShader = THREE.ShaderLib['cube'];
+    cubeShader.uniforms['tCube'].value = cubeMap;
+    var skyBoxMaterial = new THREE.ShaderMaterial({
+        fragmentShader: cubeShader.fragmentShader,
+        vertexShader: cubeShader.vertexShader,
+        uniforms: cubeShader.uniforms,
+        depthWrite: false,
+        side: THREE.BackSide
+    });
+    var skyBox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100), skyBoxMaterial);
+    scene.add(skyBox);
+    texture = new THREE.TextureLoader().load("assets/textures/watercolor-blue.jpg");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 2);  
 
     // var img = "assets/textures/watercolor-blue.jpg";
     // texture = new THREE.TextureLoader().load(img);
@@ -97,11 +115,47 @@ function setup() {
       this.ar1 = dataArray[2];
       this.ar2 = dataArray[3];
     }; 
+
+    // SHADER
+
+    uniforms1 = {
+      time:       { value: 1.0 },
+      resolution: { value: new THREE.Vector2() }
+    };
+    
+    uniforms2 = {
+      time:       { value: 4.0 },
+      resolution: { value: new THREE.Vector2() },
+      texture:    { value: new THREE.TextureLoader().load( "assets/textures/bluecloud.jpg" ) }
+    };
+
+    uniforms2.texture.value.wrapS = uniforms2.texture.value.wrapT = THREE.RepeatWrapping;
+
+
+    // var params = [
+    //   [ 'fragment_shader1', uniforms1 ]
+    // ];
+    var vShader = $('#vertexShader');
+    var fShader = $('#fragment_shader1');
+    
+    alphaGeo = new THREE.TetrahedronGeometry(.1, 5) //sphere
+    betaGeo = new THREE.TorusKnotGeometry( .1, .5, 5, 6, 4, 6 ) //knot
+    deltaGeo = new THREE.TorusKnotGeometry( .1, .5, 5, 6, 1, 1 ) //loop
+    thetaGeo = new THREE.TorusKnotGeometry( .1, .5, 5, 6, 7, 6 ) //flower
+    gammaGeo = new THREE.TetrahedronGeometry(.1, 0) //triangle
+
+    shaderMat = new THREE.ShaderMaterial( {
+      // uniforms: params[ 0 ][ 1 ],
+      vertexShader:   vShader.text(),
+      fragmentShader: fShader.text(),
+    } );
+    
                    
     // central object
-    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 13, 15);
     // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object = new THREE.Mesh(sgeometry, objectMaterial1);
+    object.position.set(0, moveStar, 0)
     scene.add(object);
 
     //particles
@@ -128,7 +182,7 @@ function setup() {
     particles = new THREE.Mesh(geom, partMat);
     scene.add(particles)    
 
-    TweenMax.to(particles.scale,5,{x:0.1,y:0.1,z:0.1});
+
 
     // Helpers
     var axis = new THREE.AxisHelper(10);
@@ -249,7 +303,7 @@ socket.on('/muse/elements/beta_session_score', function (data){
     var mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
     var mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
 
-    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
+    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 13, 15);
     // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
     object.geometry = sgeometry;
 
@@ -303,7 +357,9 @@ socket.on('/muse/elements/experimental/concentration', function (data){
   particles.rotation.y -= 0.0040;
 
   var focusData = data.values;
-  console.log(focusData)
+  moveStar = map_range(focusData, 0, 1, -10, 0);
+  object.position.set(0, moveStar, 0)
+  console.log(moveStar)
   if (focusData > 0.5) {
       if (object.material != objectMaterial1){
           object.material = objectMaterial1
@@ -323,9 +379,10 @@ socket.on('/muse/elements/experimental/concentration', function (data){
   var brainData = passData(alpha2, alpha3);   
   if (focusData === 1 && recordState === 0){
     // save mappedAlpha3, mappedAlpha2, and texture
-    object.material.color = new THREE.Color(0xFF0000);
+    // object.material.color = new THREE.Color(0xf58500);
     // alpha2 = alpha2;
     // alpha3 = alpha3;
+    TweenMax.to(particles.scale,5,{x:0.01,y:0.01,z:0.01});
     console.log("alpha2 is" + alpha2);
     console.log("alpha3 is" + alpha3);
     saveData(brainData);
