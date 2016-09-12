@@ -134,12 +134,14 @@
         
         <script src="vendor/utils/helpers.js"></script>
 
+        <script type="text/javascript" src="vendor/SPE.min.js"></script>
+
         <script type="text/javascript" src="lib/fixtures.js"></script>
         <script type="text/javascript" src="/socket.io/socket.io.js"></script>
         <!-- <script type="text/javascript" src="lib/scene-all.js"></script> -->
-        <script type="text/javascript" src="lib/test.js"></script>
-
-        <script id="fragment_shader4" type="x-shader/x-fragment">
+        <script type="text/javascript" src="lib/paint.js"></script>
+        
+        <script id="fragmentShader" type="x-shader/x-fragment">
 
           uniform float time;
           uniform vec2 resolution;
@@ -262,6 +264,117 @@
 
 
         </script>
-        
+
+<!--        <script type="text/javascript">
+            // variables used in init()
+            var scene, camera, renderer, stats, stats2, clock;
+
+            // Used in initParticles()
+            var emitter, particleGroup;
+
+            // Mouse co-ords
+            var mouseX, mouseY, mouseVector = new THREE.Vector3();
+
+            // Setup the scene
+            function init() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 10000);
+                camera.position.z = 50;
+                camera.lookAt( scene.position );
+
+                renderer = new THREE.WebGLRenderer();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                renderer.setClearColor(0x000000);
+
+                clock = new THREE.Clock();
+
+
+                document.body.appendChild( renderer.domElement );
+            }
+
+            // Create particle group and emitter
+            function initParticles() {
+                particleGroup = new SPE.Group({
+                    texture: {
+                        value: THREE.ImageUtils.loadTexture('assets/textures/smokeparticle.png')
+                    }
+                });
+
+                emitter = new SPE.Emitter({
+                        particleCount: 500,
+                        maxAge: {
+                            value: 2
+                        },
+                        position: {
+                            value: new THREE.Vector3( 0, 10, 0 )
+                        },
+                        size: {
+                            value: [0, 4]
+                        },
+                        color: {
+                            value: new THREE.Color(0.5, 0.25, 0.9)
+                        },
+                        opacity: {
+                            value: 1
+                        },
+                        rotation: {
+                            axis: new THREE.Vector3( 0, 0, 1 ),
+                            angle: 0,
+                            static: false,
+                            center: new THREE.Vector3()
+                        },
+                        direction: -1
+                    });
+
+                particleGroup.addEmitter( emitter );
+                scene.add( particleGroup.mesh );
+
+            }
+
+            function animate() {
+                requestAnimationFrame( animate );
+
+                // Using a fixed time-step here to avoid pauses
+                render( 0.02 );
+            }
+
+
+            function render( dt ) {
+                particleGroup.tick( dt );
+                renderer.render( scene, camera );
+            }
+
+
+            // Add mousemove listener to move the `emitter`.
+            document.addEventListener( 'mousemove', function( e ) {
+                mouseVector.set(
+                    (e.clientX / window.innerWidth) * 2 - 1,
+                    -(e.clientY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+
+                mouseVector.unproject( camera );
+                emitter.position.value = emitter.position.value.set( mouseVector.x * camera.fov, mouseVector.y * camera.fov, 0 );
+            }, false );
+
+
+            window.addEventListener( 'resize', function() {
+                var w = window.innerWidth,
+                    h = window.innerHeight;
+
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize( w, h );
+            }, false );
+
+
+            init();
+            initParticles();
+
+            setTimeout(animate, 0);
+
+        </script>
+-->
     </body>
 </html>
