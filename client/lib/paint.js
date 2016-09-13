@@ -1,8 +1,5 @@
-// Q: should this be window.location?
 var serverUrl = window.location.href;
 var socket = io.connect(serverUrl);
-
-
 
 // 3D 
 var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry, alphaMat;
@@ -15,17 +12,13 @@ var mappedAlpha2 = 0;
 var mappedAlpha3 = 0;
 var mouseX = 0, mouseY = 0;
 var alphaData, thetaData
+var accFB, accUD, accLR
 var shaderMat
 var focusData
-var strDownloadMime = "image/octet-stream";
+var tetraGeo1, icoGeo1, sphereGeo
 
 init();
 setup();
-
-function reset(){
-  recordState = 0;
-//  console.log("reset success")
-}
 
 
 function mousemove(e) {
@@ -43,19 +36,7 @@ function remove(object) {
 
 function init() {
     // renderer
-    var saveLink = document.createElement('div');
-    saveLink.style.position = 'absolute';
-    saveLink.style.top = '10px';
-    saveLink.style.width = '100%';
-    saveLink.style.color = 'white !important';
-    saveLink.style.textAlign = 'center';
-    saveLink.innerHTML =
-        '<a href="#" id="saveLink"></a>';
-    document.body.appendChild(saveLink);
-    document.getElementById("saveLink").addEventListener('click', saveAsImage);
-    renderer = new THREE.WebGLRenderer({
-        preserveDrawingBuffer: true
-    });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.autoClear = false;
@@ -65,7 +46,7 @@ function init() {
     scene = new THREE.Scene();
     // camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.x = 0;
+    camera.position.x = 10;
     camera.position.y = 1;
     camera.position.z = 8;
     camera.lookAt(scene.position);
@@ -83,11 +64,6 @@ function init() {
     window.addEventListener('resize', onWindowResize, false);
     // window.addEventListener('mousemove', mousemove, false);
     // window.addEventListener('mousemove', changeBrush, false);
-    // window.addEventListener('accelerometer', changeBrush, false);
-
-    // var myEvent = new CustomEvent("accelerometer");
-    // document.body.dispatchEvent(myEvent);
-
 }
 
 function setup() {
@@ -102,7 +78,7 @@ function setup() {
         side: THREE.BackSide
     });
     var skyBox = new THREE.Mesh(new THREE.CubeGeometry(100, 100, 100), skyBoxMaterial);
-    scene.add(skyBox);
+    // scene.add(skyBox);
 
     // grab brain data
     Alpha = function(dataArray) {
@@ -118,18 +94,17 @@ function setup() {
       this.tr2 = dataArray[3];
     }; 
 
-
+    // MATERIALS
 
     objectMaterial1 = new THREE.MeshStandardMaterial({
-
         shading: THREE.FlatShading,
         side: THREE.DoubleSide,
         transparent: true,
         // opacity: alphaData.al1 + .1,
         color: 0xF5C0AE
     });
-    objectMaterial2 = new THREE.MeshStandardMaterial({
 
+    objectMaterial2 = new THREE.MeshStandardMaterial({
         shading: THREE.SmoothShading,
         side: THREE.DoubleSide,
         wireframe: true,
@@ -138,8 +113,6 @@ function setup() {
         
         color: 0x90C3D4
     });
-
-
 
 
 
@@ -158,20 +131,10 @@ function setup() {
     // } );
 
     // CREATE OBJECT SHAPE
-
-    var alphaGeo = new THREE.TetrahedronGeometry(.1, 5) //sphere
-    deltaGeo = new THREE.TorusKnotGeometry( .1, .5, 5, 6, 1, 1 ) //loop
-    thetaGeo = new THREE.TorusKnotGeometry( .1, .5, 5, 6, 7, 6 ) //flower
-    gammaGeo = new THREE.TetrahedronGeometry(.1, 0) //triangle
+    tetraGeo1 = new THREE.TetrahedronGeometry(.1, 0) //tri
+    icoGeo1 = new THREE.IcosahedronGeometry(.1, 0) //ico
+    sphereGeo = new THREE.TetrahedronGeometry(.1, 3) //sphere
                  
-
-    var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    object = new THREE.Mesh(sgeometry, objectMaterial1);
-    // scene.add(object);
-
-
-
     // Helpers
     var axis = new THREE.AxisHelper(10);
     // scene.add(axis);
@@ -195,271 +158,116 @@ function setup() {
 function changeBrush(e) {
 
     // console.log(e.clientX, window.innerWidth, e.clientX - window.innerWidth / 2)
-    // console.log(e.clientY, window.innerHeight, e.clientX - window.innerHeight / 2)
-
-
-    // console.log("theta " + thetaData.tl1,thetaData.tl2,thetaData.tr1,thetaData.tr2)
-    
-    // console.log("alpha " + alphaData.al1,alphaData.al2,alphaData.ar1,alphaData.ar2)
-
-    
-}
-
-Leap.loop({
- 
-  hand: function(hand){
-    console.log( hand.screenPosition() );
-  }
- 
-}).use('screenPosition');
-
-var num = 0
-
-var lastTime = performance.now(), //  
-    threshold = 10000 / 60; // 1/60 seconds
-
-socket.on('/muse/acc', function (data){
-  var accFB = data.values[0];
-  var accUD = data.values[1];
-  var accLR = data.values[2];
-
-  // var mappedAcc = map_range(alphaData.ar2, 0, 1, 0, 19.5);
-  // camera
-  // camera.position.x = (accLR - camera.position.x) * 0.02;
-  // console.log(accLR)
-  // console.log(camera.position.x)
-  // camera.position.y = (-mouseY - camera.position.y) * 0.02;
-  // camera.position.z = (-accFB - camera.position.z) * 0.02;
-
-  var nextTime = performance.now();
-  var lag = (nextTime - lastTime);
-  
-
-  // console.log(nextTime, ":", data.values[0])
-
-  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
-  if (lag >= threshold) {
-
-    if (Math.random() > .3)
-        return;
-
-
 
     var pos = {
-        x: accLR,
-        y: accUD / 10,
-        z: accFB
+        x: e.clientX - window.innerWidth / 2,
+        y: -e.clientY + window.innerHeight / 2
     }
-
-    //0-1280, 0-700
-    // console.log(accLR,accUD)
-    // console.log(pos.x / 50,pos.y / 20, pos.z / 50)
     if (thetaData.tr1 <= .25 || thetaData.tr2 <= .25 || thetaData.tl1 <= .25 || thetaData.tl2 <= .25) {
-      var tetraGeo1 = new THREE.TetrahedronGeometry(.1, 0) //tri
       var tetra1 = new THREE.Mesh(tetraGeo1, objectMaterial1)    
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           tetra1.material = objectMaterial2
        };         
-      tetra1.position.set(pos.x / 50, pos.y / 20, pos.z / 50)
-      tetra1.position.z =+ 1
+      tetra1.position.set(pos.x / 50, pos.y / 50, 0)
       tetra1.rotation.set(Math.random(), Math.random(), Math.random())
-      tetra1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)  
-      TweenMax.from(tetra1.scale, 1, {
-          x: 0,
-          y: 0,
-          z: 0
-      }); 
+      tetra1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)   
       scene.add( tetra1);
     } 
     else if (thetaData.tr1 > .25 && thetaData.tr1 <= .5 || thetaData.tr2 > .25 && thetaData.tr2 <= .5 || thetaData.a11 > .25 && thetaData.tl1 <= .5 || thetaData.tl2 > .25 && thetaData.tl2 <= .5) {
-      var icoGeo1 = new THREE.IcosahedronGeometry(.1, pos.z / 50) //ico
       var ico1 = new THREE.Mesh(icoGeo1, objectMaterial1)      
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           ico1.material = objectMaterial2
        };      
-      ico1.position.set(pos.x / 50, pos.y / 20, pos.z / 50)
+      ico1.position.set(pos.x / 50, pos.y / 50, 0)
       ico1.rotation.set(Math.random(), Math.random(), Math.random())
       ico1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)   
       scene.add( ico1);
     } 
     else{
-      var sphereGeo = new THREE.TetrahedronGeometry(.1, 3) //sphere
       var sphere = new THREE.Mesh(sphereGeo, objectMaterial1)      
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           sphere.material = objectMaterial2
        };
-      sphere.position.set(pos.x / 50, pos.y / 20, 0)
+      sphere.position.set(pos.x / 50, pos.y / 50, 0)
       sphere.rotation.set(Math.random(), Math.random(), Math.random())
       sphere.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)  
       scene.add( sphere); 
     };
+   
+    console.log("theta " + thetaData.tl1,thetaData.tl2,thetaData.tr1,thetaData.tr2)   
+    console.log("alpha " + alphaData.al1,alphaData.al2,alphaData.ar1,alphaData.ar2)    
+}
+
+var lastTime = performance.now(), //  
+    threshold = 1000 / 60; // 1/60 seconds
+
+socket.on('/muse/acc', function (data){
+  accFB = data.values[0];
+  accUD = data.values[1];
+  accLR = data.values[2];
+
+  // var mappedAcc = map_range(alphaData.ar2, 0, 1, 0, 19.5);
+  // camera
+  camera.position.x = (mouseX - camera.position.x) * 0.02;
+  // console.log(accLR)
+  // console.log(camera.position.x)
+  camera.position.y = (-mouseY - camera.position.y) * 0.02;
+  // camera.position.z = (-accFB - camera.position.z) * 0.02;
   
-  }  
-  camera.lookAt(scene.position)  
+  
 });
 
-var map  = new THREE.TextureLoader().load("assets/textures/white-fur-texture.jpg");
-
-// CREATE data obj (Q: is it the same as var dataObject?)
-function createThreeObj(passData, sgeometry){
-  return {
-    geometry: sgeometry,
-    material: objectMaterial1,
-    // material: {
-    //   color: 0xffffff,
-    //   shading: THREE.SmoothShading,
-    //   side: THREE.DoubleSide,
-    //   wireframe: true,
-    //   transparent: true
-    //   texture: {
-    //     img: 'INSERT AN IMAGE HERE'
-    //   },
-    // }    
-  };
-}
-
-// SAVE obj to DB by POSTing to node.js server with data I want saved    
-function save(threejsObj){
-  $.post( window.location.origin, threejsObj, function(data){
-    // console.log(data);
-  });  
-}
-
-var threejsObj = {
-    // geometry: sgeometry,
-    material: objectMaterial1,
-}
-
-// reconstitute obj from db
-// getData(threejsObj);
-
-var objectRequest = {
-  getBy: 'most recent time stamp'
-}
-
-getData(objectRequest);
-
-function getData(requestObject){
-  $.get(serverUrl, requestObject, function(data){
-    // what does data look like
-    // make an obj variable from data
-    // var texture = new THREE.TextureLoader().load(obj.material.texture.img); 
-  //   var geometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-  //   var material = new THREE.MeshStandardMaterial({
-  //     shading: THREE.FlatShading,
-  //     side: THREE.DoubleSide
-  //   });
-  //   new THREE.Mesh(geometry, material);
-  }, 'json');
-}
 
 socket.on('/muse/elements/alpha_session_score', function (data){
 
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = dataFixture;
-  
+
   var nextTime = performance.now();
   var lag = (nextTime - lastTime);
-  
+  var time=0;
+  var radius=0;
 
-  // console.log(nextTime, ":", data.values[0])
-
-  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
   if (lag >= threshold) {
-
     // reset lastTime
     lastTime = nextTime;
 
-    alphaData = new Alpha(data.values); // look inside data for values, grabs array 
+    time+=.01;
+    radius+=1;
 
-    var mappedAlpha2 = map_range(alphaData.ar2, 0, 1, 0, 19.5);      
-    var mappedAlpha3 = map_range(alphaData.al1, 0, 1, 0, 19.5); //works
+    alphaData = new Alpha(data.values); // look inside data for values, grabs array
+    console.log("alpha " + data.values)
 
-    // if (mappedAlpha2 < 10) {
-    //   var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 15, 15);
-    //   object.material.color = new THREE.Color(0xFF0000);
-    //   // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    //   object.geometry = sgeometry;
-    // } 
-    // else{
-    //   var sgeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, 5, 16);
-    //   object.material.color = new THREE.Color(0x00ff00);
-    //   // originalgGeometry = new THREE.TorusKnotGeometry(1.4, 0.55, 100, 16, mappedAlpha2, mappedAlpha3);
-    //   object.geometry = sgeometry;      
-    // };
+    var brush = new THREE.Mesh(tetraGeo1, objectMaterial1); 
+    brush.material.opacity = alphaData.ar1;   
+    brush.position.y = radius*Math.sin(time)*radius;
+    brush.position.x = radius*Math.cos(time)*radius; 
+    // brush.position.z = Math.random() * 1000 - 500;
+    brush.rotation.set(Math.random(), Math.random(), Math.random());
+    brush.scale.set(alphaData.ar1 * 100, alphaData.ar1 * 100, alphaData.ar1 * 100); 
+    brush.material.color = new THREE.Color(0xfff200);
+
+    if (alphaData.ar1 >= .7 && alphaData.ar2 >= .7 && alphaData.al1 >= .7 && alphaData.al2 >= .7) {    
+      brush.geometry = sphereGeo;  
+      // sphere.material.color = new THREE.Color(0xff0000); 
+    } 
+    else if (alphaData.ar1 >= .3  && alphaData.ar1 < .7 || alphaData.ar2 >= .3  && alphaData.ar2 < .7 || alphaData.al1 >= .3  && alphaData.al1 < .7 || alphaData.al2 >= .3 && alphaData.al2 < .7){ 
+      brush.geometry = icoGeo1; 
+      // ico.material.color = new THREE.Color(0xf58500); 
+    } 
+    scene.add(brush);
+  }   
+     
 
 
-    alpha2 = mappedAlpha2;
-    alpha3 = mappedAlpha3;
-    // 
-    
-    var saveObject = createThreeObj(data, sgeometry); 
-    
-    // console.log(data) 
-    // console.log(sgeometry)
-    // if(mappedAlpha2 > 19){
-    //   console.log('about to save')
-    //   // debugger
-    //   save(saveObject);
-    // } 
 
       controls.update();
       if (mobile) {
           camera.position.set(0, 0, 0)
           camera.translateZ(10);
       }
-      renderer.render(scene, camera);
-  } 
-}); 
-
-
-function saveAsImage() {
-    var imgData, imgNode;
-
-    try {
-        var strMime = "image/jpeg";
-        imgData = renderer.domElement.toDataURL(strMime);
-
-        saveFile(imgData.replace(strMime, strDownloadMime), "brainpainting.jpg");
-
-    } catch (e) {
-        console.log(e);
-        return;
-    }
-
-}
-
-var saveFile = function (strData, filename) {
-    var link = document.createElement('a');
-    if (typeof link.download === 'string') {
-        document.body.appendChild(link); //Firefox requires the link to be in the body
-        link.download = filename;
-        link.href = strData;
-        link.click();
-        document.body.removeChild(link); //remove the link when done
-    } else {
-        location.replace(uri);
-    }
-} 
-
-var alpha2;
-var alpha3;
-var recordState = 0;
-
-function passData(data2, data3){
-  return {
-    alpha2: data2,
-    alpha3: data3,
-  };
-  // console.log(data2, data3)
-}
-
-function saveData(gotData){
-  // console.log('about to save:', gotData);
-  $.post( window.location.origin, gotData, function(data){
-    // console.log('savedData:', data);
-  }, 'json');  
-}
+      renderer.render(scene, camera);  
+});  
 
 
 
@@ -481,23 +289,10 @@ socket.on('/muse/elements/experimental/concentration', function (data){
    // object.material.opacity = focusData + .1;
   // console.log(focusData)
 
-  // if (focusData == 1) {
-  //   object.material.map = map;
-  //   object.material.map.needsUpdate=true;
-  // }
 
-  var brainData = passData(alpha2, alpha3);   
-  if (focusData === 1 && recordState === 0){
-    // save mappedAlpha3, mappedAlpha2, and texture
-    
-    // alpha2 = alpha2;
-    // alpha3 = alpha3;
-  //  console.log("alpha2 is" + alpha2);
-  //  console.log("alpha3 is" + alpha3);
-    saveData(brainData);
-    //TODO: button click to trigger reset function Just save the first one and stop
-    recordState = 1;
-  //  console.log("recordState = " + recordState);
+
+  if (focusData === 1){
+    // do something
   }
   
 });
@@ -521,7 +316,7 @@ socket.on('/muse/elements/experimental/concentration', function (data){
 socket.on('/muse/elements/theta_session_score', function(data){
 
     thetaData = new Theta(data.values);
-
+    // console.log("theta " + data.values)
 });
 
 // socket.on('/muse/elements/gamma_session_score', function(data){
