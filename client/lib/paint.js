@@ -216,6 +216,8 @@ socket.on('/muse/acc', function (data){
   
   
 });
+  var time=0;
+  var radius=0;
 
 
 socket.on('/muse/elements/alpha_session_score', function (data){
@@ -225,8 +227,6 @@ socket.on('/muse/elements/alpha_session_score', function (data){
 
   var nextTime = performance.now();
   var lag = (nextTime - lastTime);
-  var time=0;
-  var radius=0;
 
   if (lag >= threshold) {
     // reset lastTime
