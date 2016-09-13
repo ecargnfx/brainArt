@@ -232,7 +232,7 @@ socket.on('/muse/elements/alpha_session_score', function (data){
     // reset lastTime
     lastTime = nextTime;
 
-    time+=.01;
+    time+=.1;
     radius+=1;
 
     alphaData = new Alpha(data.values); // look inside data for values, grabs array
@@ -240,8 +240,8 @@ socket.on('/muse/elements/alpha_session_score', function (data){
 
     var brush = new THREE.Mesh(tetraGeo1, objectMaterial1); 
     brush.material.opacity = alphaData.ar1;   
-    brush.position.y = radius*Math.sin(time)*radius;
-    brush.position.x = radius*Math.cos(time)*radius; 
+    brush.position.y = radius*Math.sin(time);
+    brush.position.x = radius*Math.cos(time); 
     // brush.position.z = Math.random() * 1000 - 500;
     brush.rotation.set(Math.random(), Math.random(), Math.random());
     brush.scale.set(alphaData.ar1 * 100, alphaData.ar1 * 100, alphaData.ar1 * 100); 
