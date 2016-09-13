@@ -26,6 +26,28 @@ var MongoClient = require('mongodb').MongoClient; // mongodb api
 var assert = require('assert'); // for testing
 var ObjectId = require('mongodb').ObjectID;
 
+var leapjs = require('leapjs');
+var controller  = new leapjs.Controller({enableGestures: true});
+
+controller.on('connect', function() {
+  console.log("Successfully connected.");
+});
+
+controller.on('deviceConnected', function() {
+  console.log("A Leap device has been connected.");
+});
+
+controller.on('deviceDisconnected', function() {
+  console.log("A Leap device has been disconnected.");
+});
+
+controller.on('deviceFrame', function(frame) {
+  var numberOfFingers = frame.fingers.length;
+  console.log(numberOfFingers);
+});
+
+controller.connect();
+
 var url = 'mongodb://localhost:27017/test'; // type of server, location, what port, and specific location
     
 var collectionName = 'thoughtObjects';

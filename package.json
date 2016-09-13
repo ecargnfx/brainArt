@@ -15,6 +15,7 @@
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.12.2",
+    "leapjs": "^0.6.4",
     "mongodb": "^2.2.7",
     "node-muse": "^0.1.0",
     "socket.io": "^1.3.5"

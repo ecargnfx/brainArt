@@ -2,6 +2,8 @@
 var serverUrl = window.location.href;
 var socket = io.connect(serverUrl);
 
+
+
 // 3D 
 var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry, alphaMat;
 var objectMaterial1, objectMaterial2;
@@ -13,9 +15,9 @@ var mappedAlpha2 = 0;
 var mappedAlpha3 = 0;
 var mouseX = 0, mouseY = 0;
 var alphaData, thetaData
-var accFB, accUD, accLR
 var shaderMat
 var focusData
+var strDownloadMime = "image/octet-stream";
 
 init();
 setup();
@@ -41,7 +43,19 @@ function remove(object) {
 
 function init() {
     // renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    var saveLink = document.createElement('div');
+    saveLink.style.position = 'absolute';
+    saveLink.style.top = '10px';
+    saveLink.style.width = '100%';
+    saveLink.style.color = 'white !important';
+    saveLink.style.textAlign = 'center';
+    saveLink.innerHTML =
+        '<a href="#" id="saveLink">Save Screenshot</a>';
+    document.body.appendChild(saveLink);
+    document.getElementById("saveLink").addEventListener('click', saveAsImage);
+    renderer = new THREE.WebGLRenderer({
+        preserveDrawingBuffer: true
+    });
     renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.autoClear = false;
@@ -51,7 +65,7 @@ function init() {
     scene = new THREE.Scene();
     // camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    camera.position.x = 10;
+    camera.position.x = 0;
     camera.position.y = 1;
     camera.position.z = 8;
     camera.lookAt(scene.position);
@@ -68,11 +82,11 @@ function init() {
     window.addEventListener('deviceorientation', setOrientationControls, true);
     window.addEventListener('resize', onWindowResize, false);
     // window.addEventListener('mousemove', mousemove, false);
-    window.addEventListener('mousemove', changeBrush, false);
-    window.addEventListener('accelerometer', changeBrush, false);
+    // window.addEventListener('mousemove', changeBrush, false);
+    // window.addEventListener('accelerometer', changeBrush, false);
 
-    var myEvent = new CustomEvent("accelerometer");
-    document.body.dispatchEvent(myEvent);
+    // var myEvent = new CustomEvent("accelerometer");
+    // document.body.dispatchEvent(myEvent);
 
 }
 
@@ -180,35 +194,58 @@ function setup() {
 
 function changeBrush(e) {
 
-
-    if (Math.random() > .3)
-        return;
-
-
     // console.log(e.clientX, window.innerWidth, e.clientX - window.innerWidth / 2)
+    // console.log(e.clientY, window.innerHeight, e.clientX - window.innerHeight / 2)
+
+
+    // console.log("theta " + thetaData.tl1,thetaData.tl2,thetaData.tr1,thetaData.tr2)
+    
+    // console.log("alpha " + alphaData.al1,alphaData.al2,alphaData.ar1,alphaData.ar2)
+
+    
+}
+
+Leap.loop({
+ 
+  hand: function(hand){
+    var swipeX = hand.screenPosition()[0];
+    var swipeY = hand.screenPosition()[1];
+    var swipeZ = hand.screenPosition()[2];
+    console.log( swipeX );
 
     var pos = {
-        x: e.clientX - window.innerWidth / 2,
-        y: -e.clientY + window.innerHeight / 2
+        x: swipeX,
+        y: swipeY,
+        z: swipeZ
     }
+
+    //0-1280, 0-700
+    // console.log(accLR,accUD)
+    // console.log(pos.x / 50,pos.y / 20, pos.z / 50)
     if (thetaData.tr1 <= .25 || thetaData.tr2 <= .25 || thetaData.tl1 <= .25 || thetaData.tl2 <= .25) {
       var tetraGeo1 = new THREE.TetrahedronGeometry(.1, 0) //tri
       var tetra1 = new THREE.Mesh(tetraGeo1, objectMaterial1)    
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           tetra1.material = objectMaterial2
        };         
-      tetra1.position.set(pos.x / 50, pos.y / 50, 0)
+      tetra1.position.set(pos.x / 50, pos.y / 20, pos.z / 50)
+      // tetra1.position.z += 1
       tetra1.rotation.set(Math.random(), Math.random(), Math.random())
-      tetra1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)   
+      tetra1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)  
+      // TweenMax.from(tetra1.scale, 1, {
+      //     x: 0,
+      //     y: tetra1.position.y+0.01, repeat:-1,
+      //     z: 0
+      // }); 
       scene.add( tetra1);
     } 
     else if (thetaData.tr1 > .25 && thetaData.tr1 <= .5 || thetaData.tr2 > .25 && thetaData.tr2 <= .5 || thetaData.a11 > .25 && thetaData.tl1 <= .5 || thetaData.tl2 > .25 && thetaData.tl2 <= .5) {
-      var icoGeo1 = new THREE.IcosahedronGeometry(.1, 0) //ico
+      var icoGeo1 = new THREE.IcosahedronGeometry(.1, pos.z / 50) //ico
       var ico1 = new THREE.Mesh(icoGeo1, objectMaterial1)      
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           ico1.material = objectMaterial2
        };      
-      ico1.position.set(pos.x / 50, pos.y / 50, 0)
+      ico1.position.set(pos.x / 50, pos.y / 20, pos.z / 50)
       ico1.rotation.set(Math.random(), Math.random(), Math.random())
       ico1.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)   
       scene.add( ico1);
@@ -219,43 +256,46 @@ function changeBrush(e) {
       if (alphaData.ar1 > .5 && alphaData.ar2 > .5 && alphaData.al1 > .5 && alphaData.al2 > .5) {
           sphere.material = objectMaterial2
        };
-      sphere.position.set(pos.x / 50, pos.y / 50, 0)
+      sphere.position.set(pos.x / 50, pos.y / 20, 0)
       sphere.rotation.set(Math.random(), Math.random(), Math.random())
       sphere.scale.set(thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1, thetaData.tr1 * 2 + 1)  
       scene.add( sphere); 
     };
 
-
-    
-    console.log("theta " + thetaData.tl1,thetaData.tl2,thetaData.tr1,thetaData.tr2)
-    
-    console.log("alpha " + alphaData.al1,alphaData.al2,alphaData.ar1,alphaData.ar2)
-
-    
-}
+  }
+ 
+}).use('screenPosition');
 
 var num = 0
-var time = 0; // used for shimmer
 
 var lastTime = performance.now(), //  
-    threshold = 1000 / 60; // 1/60 seconds
+    threshold = 10000 / 60; // 1/60 seconds
 
 socket.on('/muse/acc', function (data){
-  accFB = data.values[0];
-  accUD = data.values[1];
-  accLR = data.values[2];
+  var accFB = data.values[0];
+  var accUD = data.values[1];
+  var accLR = data.values[2];
 
   // var mappedAcc = map_range(alphaData.ar2, 0, 1, 0, 19.5);
   // camera
-  camera.position.x = (mouseX - camera.position.x) * 0.02;
+  // camera.position.x = (accLR - camera.position.x) * 0.02;
   // console.log(accLR)
   // console.log(camera.position.x)
-  camera.position.y = (-mouseY - camera.position.y) * 0.02;
+  // camera.position.y = (-mouseY - camera.position.y) * 0.02;
   // camera.position.z = (-accFB - camera.position.z) * 0.02;
+
+  var nextTime = performance.now();
+  var lag = (nextTime - lastTime);
   
+
+  // console.log(nextTime, ":", data.values[0])
+
+  // checks time elapsed between last time and next time. If lag >= 1/60 second, then run function.
+  if (lag >= threshold) {
+
+
   
-  
-  camera.lookAt(scene.position)  
+  }  
 });
 
 var map  = new THREE.TextureLoader().load("assets/textures/white-fur-texture.jpg");
@@ -370,7 +410,37 @@ socket.on('/muse/elements/alpha_session_score', function (data){
       }
       renderer.render(scene, camera);
   } 
-});  
+}); 
+
+
+function saveAsImage() {
+    var imgData, imgNode;
+
+    try {
+        var strMime = "image/jpeg";
+        imgData = renderer.domElement.toDataURL(strMime);
+
+        saveFile(imgData.replace(strMime, strDownloadMime), "brainpainting.jpg");
+
+    } catch (e) {
+        console.log(e);
+        return;
+    }
+
+}
+
+var saveFile = function (strData, filename) {
+    var link = document.createElement('a');
+    if (typeof link.download === 'string') {
+        document.body.appendChild(link); //Firefox requires the link to be in the body
+        link.download = filename;
+        link.href = strData;
+        link.click();
+        document.body.removeChild(link); //remove the link when done
+    } else {
+        location.replace(uri);
+    }
+} 
 
 var alpha2;
 var alpha3;
@@ -451,7 +521,7 @@ socket.on('/muse/elements/experimental/concentration', function (data){
 socket.on('/muse/elements/theta_session_score', function(data){
 
     thetaData = new Theta(data.values);
-    console.log("theta " + data.values)
+    console.log(thetaData)
 
 });
 
