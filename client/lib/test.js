@@ -97,7 +97,7 @@ function setup() {
       geometry: sgeometry,
       material: {
         shading: THREE.FlatShading,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
         texture: {
           img: img
         },
