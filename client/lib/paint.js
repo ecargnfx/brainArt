@@ -3,7 +3,7 @@ var socket = io.connect(serverUrl);
 
 // 3D 
 var camera, scene, renderer, material, smaterial, geometry, sgeometry, originalgGeometry, alphaMat;
-var solidMat, wfMat;
+var solidMat, wfMatT, wfMatB, wfMatP, wfMatK, wfMatO, wfMatY
 var gui, guiControl, object
 var mobile = false;
 var texture
@@ -16,6 +16,8 @@ var accFB, accUD, accLR
 var shaderMat
 var focusData
 var tetraGeo1, icoGeo1, sphereGeo
+var emitter, particleGroup;
+var alphaAvg, thetaAvg
 
 init();
 setup();
@@ -36,8 +38,8 @@ function remove(object) {
 
 function init() {
     // renderer
-renderer = new THREE.WebGLRenderer( { preserveDrawingBuffer: true } );
-        renderer.autoClearColor = false;
+renderer = new THREE.WebGLRenderer(  );
+        // renderer.autoClearColor = false;
     renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.autoClear = false;
@@ -105,16 +107,54 @@ function setup() {
         color: 0xF5C0AE
     });
 
-    wfMat = new THREE.MeshStandardMaterial({
+    wfMatT = new THREE.MeshStandardMaterial({
         shading: THREE.SmoothShading,
         side: THREE.DoubleSide,
         wireframe: true,
         transparent: true,
-        // opacity: alphaData.al1 + .1,
-        
+        // opacity: alphaAvg,
+        color: 0x76F580
+    });
+    wfMatB = new THREE.MeshStandardMaterial({
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true,
+        // opacity: alphaAvg,
         color: 0x90C3D4
     });
-
+    wfMatP = new THREE.MeshStandardMaterial({
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true,
+        // opacity: alphaAvg,
+        color: 0xB290D4
+    });
+    wfMatK = new THREE.MeshStandardMaterial({
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true,
+        // opacity: alphaAvg,
+        color: 0xFCFC58
+    });
+    wfMatO = new THREE.MeshStandardMaterial({
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true,
+        // opacity: alphaAvg,
+        color: 0xFA8573 
+    });
+    wfMatY = new THREE.MeshStandardMaterial({
+        shading: THREE.SmoothShading,
+        side: THREE.DoubleSide,
+        wireframe: true,
+        transparent: true,
+        // opacity: alphaAvg,
+        color: 0xF068FC 
+    });
 
 
     // shaderMat = new THREE.ShaderMaterial( {
@@ -132,9 +172,9 @@ function setup() {
     // } );
 
     // CREATE OBJECT SHAPE
-    tetraGeo1 = new THREE.TetrahedronGeometry(.1, 0) //tri
-    icoGeo1 = new THREE.IcosahedronGeometry(.1, 0) //ico
-    sphereGeo = new THREE.TetrahedronGeometry(.1, 3) //sphere
+    tetraGeo1 = new THREE.TetrahedronGeometry(alphaAvg, 0) //tri
+    icoGeo1 = new THREE.IcosahedronGeometry(alphaAvg, 0) //ico
+    sphereGeo = new THREE.TetrahedronGeometry(alphaAvg, 3) //sphere
                  
     // Helpers
     var axis = new THREE.AxisHelper(10);
@@ -235,6 +275,11 @@ socket.on('/muse/elements/alpha_session_score', function (data){
     lastTime = nextTime;    
 
     alphaData = new Alpha(data.values); // look inside data for values, grabs array 
+    
+    // Calculate Alpha average
+    var sum = data.values.reduce(function(a, b) { return a + b; });
+    alphaAvg = sum / data.values.length;
+    // console.log("The sum of " + data.values + " is: " + sum + " The average is: " + avg)
 
     var pos = {
         x: accLR,
@@ -249,8 +294,22 @@ socket.on('/muse/elements/alpha_session_score', function (data){
           camera.position.set(0, 0, 0)
           camera.translateZ(10);
       }
+
       renderer.render(scene, camera);  
 });  
+
+// for particles
+// function animate() {
+//     requestAnimationFrame( animate );
+//     particleGroup.tick( 0.016 );
+//     renderer.render( scene, camera );
+// }
+
+
+
+
+
+
 
 Leap.loop({
  
@@ -266,27 +325,60 @@ Leap.loop({
       z: swipeZ
     }
 
-    var brush = new THREE.Mesh(tetraGeo1, solidMat);
-    // brush.material.opacity = alphaData.ar1; 
+    var brush = new THREE.Mesh(icoGeo1, solidMat);
     brush.position.x = pos.x / 50; 
     brush.position.y = - pos.y / 50;
+    brush.material.opacity = .3; 
     // brush.position.z = pos.z / 50;
     // brush.rotation.set(Math.random(), Math.random(), Math.random());
     brush.rotation.z = Date.now() * 0.0009; 
     brush.rotation.y = Date.now() * 0.0009;
-    // brush.scale.set(alphaData.ar1 * 100, alphaData.ar1 * 100, alphaData.ar1 * 100); 
-    // brush.material.color = new THREE.Color(0xfff200);   
-    // TweenMax.from(brush.scale,3,{x:0.001,y:0.001,z:0.001}); 
+    TweenMax.from(brush.scale,1,{x:0.001,y:0.001,z:0.001}); 
     
-    console.log(alphaData.ar1,alphaData.ar2,alphaData.al1,alphaData.al2)
-    if (alphaData.ar1 >= .7 && alphaData.ar2 >= .7 && alphaData.al1 >= .7 && alphaData.al2 >= .7) {    
-      brush.geometry = sphereGeo;  
-      // sphere.material.color = new THREE.Color(0xff0000); 
+    console.log("avgs " + thetaAvg, alphaAvg)
+    // if (alphaAvg >= .7) {    
+    //   brush.geometry = sphereGeo;  
+
+    // } 
+    // else if (alphaAvg < .7){ 
+    //   brush.geometry = icoGeo1; 
+    //   brush.material.opacity = .5; 
+    //   var s = Math.sin( Date.now() * 0.002 );
+    //     brush.material.color.setHSL(0.5, s, 0.5 );
+    //   // ico.material.color = new THREE.Color(0xf58500); 
+    // } 
+
+    if (thetaAvg > alphaAvg) {
+      brush.geometry = sphereGeo;
+      brush.scale.set(thetaAvg * 5, thetaAvg * 5, thetaAvg * 5);     
+      if (thetaAvg >= .7) {
+        brush.material = wfMatT; 
+      } 
+      else if (thetaAvg >= .3 && thetaAvg < .7){
+        brush.material = wfMatB; 
+      }
+      else{
+        brush.material = wfMatP; 
+      };  
     } 
-    else if (alphaData.ar1 >= .3  && alphaData.ar1 < .7 || alphaData.ar2 >= .3  && alphaData.ar2 < .7 || alphaData.al1 >= .3  && alphaData.al1 < .7 || alphaData.al2 >= .3 && alphaData.al2 < .7){ 
-      brush.geometry = icoGeo1; 
-      // ico.material.color = new THREE.Color(0xf58500); 
-    } 
+    else{
+      brush.geometry = tetraGeo1;
+      brush.scale.set(alphaAvg * 5, alphaAvg * 5, alphaAvg * 5); 
+      if (alphaAvg >= .7) {
+        brush.material = wfMatK;
+      } 
+      else if (alphaAvg >= .3 && alphaAvg < .7){
+        brush.material = wfMatO;
+      }
+      else{
+        brush.material = wfMatY;
+      };
+    };
+
+    if (thetaAvg === 0 || alphaAvg === 0) {
+      brush.material.opacity = 0; 
+    };
+
     scene.add(brush);
 
   }
@@ -339,6 +431,9 @@ socket.on('/muse/elements/theta_session_score', function(data){
 
     thetaData = new Theta(data.values);
     // console.log("theta " + data.values)
+    var sum = data.values.reduce(function(a, b) { return a + b; });
+    thetaAvg = sum / data.values.length;
+
 
 });
 
