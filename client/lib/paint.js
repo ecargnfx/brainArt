@@ -51,7 +51,7 @@ function init() {
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.x = 10;
     camera.position.y = 1;
-    camera.position.z = 8;
+    camera.position.z = 50;
     camera.lookAt(scene.position);
     // controls
     controls = new THREE.OrbitControls(camera);
@@ -240,9 +240,10 @@ socket.on('/muse/elements/alpha_session_score', function (data) {
         console.log("alpha " + data.values)
 
         var brush = new THREE.Mesh(tetraGeo1, objectMaterial1);
-        brush.material.opacity = alphaData.ar1;
+        // brush.material.opacity = alphaData.ar1;
         brush.position.y = radius * Math.sin(time);
         brush.position.x = radius * Math.cos(time);
+        brush.position.z += 1;
         // brush.position.z = Math.random() * 1000 - 500;
         brush.rotation.set(Math.random(), Math.random(), Math.random());
         brush.scale.set(alphaData.ar1 * 100, alphaData.ar1 * 100, alphaData.ar1 * 100);
@@ -256,13 +257,14 @@ socket.on('/muse/elements/alpha_session_score', function (data) {
             // ico.material.color = new THREE.Color(0xf58500); 
         }
         brushes.add(brush);
-        if (brushes.numChildren > 100) {
+        if (brushes.children.length > 100) {
             var oldestBrush = brushes.children[0];
             brushes.remove(oldestBrush)
         }
     }
 
 
+    camera.position.z += 1;
 
 
     controls.update();
