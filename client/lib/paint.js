@@ -18,6 +18,9 @@ var focusData
 var tetraGeo1, icoGeo1, sphereGeo
 var emitter, particleGroup;
 var alphaAvg, thetaAvg
+var brushes = new THREE.Group();
+var strDownloadMime = "image/octet-stream";
+var guide
 
 init();
 setup();
@@ -38,7 +41,24 @@ function remove(object) {
 
 function init() {
     // renderer
-renderer = new THREE.WebGLRenderer(  );
+    var saveLink = document.createElement('div');
+    saveLink.style.position = 'absolute';
+    saveLink.style.top = '10px';
+    saveLink.style.width = '100%';
+    saveLink.innerHTML =
+         '<a href="#" id="saveLink">Save Screenshot</a>';
+    // document.body.appendChild(saveLink);
+    // document.getElementById("saveLink").addEventListener('click', saveAsImage);
+
+    guide = document.createElement('div');
+    guide.style.color = 'white !important';
+    guide.style.textAlign = 'center';
+    document.body.appendChild(guide);
+
+
+    renderer = new THREE.WebGLRenderer( 
+      // {preserveDrawingBuffer: true}
+     );
         // renderer.autoClearColor = false;
     renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -47,11 +67,12 @@ renderer = new THREE.WebGLRenderer(  );
     document.body.appendChild(renderer.domElement);
     // scene
     scene = new THREE.Scene();
+    scene.add(brushes);
     // camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.x = 10;
-    camera.position.y = 1;
-    camera.position.z = 15;
+    camera.position.y = 30;
+    camera.position.z = 20;
     camera.lookAt(scene.position);
     // controls
     controls = new THREE.OrbitControls(camera);
@@ -66,7 +87,7 @@ renderer = new THREE.WebGLRenderer(  );
     window.addEventListener('deviceorientation', setOrientationControls, true);
     window.addEventListener('resize', onWindowResize, false);
     // window.addEventListener('mousemove', mousemove, false);
-    window.addEventListener('mousemove', changeBrush, false);
+    // window.addEventListener('mousemove', changeBrush, false);
 }
 
 function setup() {
@@ -104,7 +125,7 @@ function setup() {
         side: THREE.DoubleSide,
         transparent: true,
         // opacity: alphaData.al1 + .1,
-        color: 0xF5C0AE
+        color: 0x76F580
     });
 
     wfMatT = new THREE.MeshStandardMaterial({
@@ -173,7 +194,7 @@ function setup() {
 
     // CREATE OBJECT SHAPE
     tetraGeo1 = new THREE.TetrahedronGeometry(alphaAvg, 0) //tri
-    icoGeo1 = new THREE.IcosahedronGeometry(alphaAvg, 0) //ico
+    icoGeo1 = new THREE.IcosahedronGeometry(alphaAvg, 1) //ico
     sphereGeo = new THREE.TetrahedronGeometry(alphaAvg, 3) //sphere
                  
     // Helpers
@@ -196,12 +217,35 @@ function setup() {
     scene.add( lights[2] );
 } 
 
-function changeBrush(e) {
+function saveAsImage() {
+     var imgData, imgNode;
+ 
+     try {
+         var strMime = "image/jpeg";
+         imgData = renderer.domElement.toDataURL(strMime);
+ 
+         saveFile(imgData.replace(strMime, strDownloadMime), "brainpainting.jpg");
+ 
+     } catch (e) {
+         console.log(e);
+         return;
+     }
+ 
+ }
+ 
+ var saveFile = function (strData, filename) {
+     var link = document.createElement('a');
+     if (typeof link.download === 'string') {
+         document.body.appendChild(link); //Firefox requires the link to be in the body
+         link.download = filename;
+         link.href = strData;
+         link.click();
+         document.body.removeChild(link); //remove the link when done
+     } else {
+         location.replace(uri);
+     }
+ }
 
-    // console.log(e.clientX, window.innerWidth, e.clientX - window.innerWidth / 2)   
-    // console.log("theta " + thetaData.tl1,thetaData.tl2,thetaData.tr1,thetaData.tr2)   
-    // console.log("alpha " + alphaData.al1,alphaData.al2,alphaData.ar1,alphaData.ar2)    
-}
 
 // Create particle group and emitter
 function initParticles() {
@@ -248,11 +292,13 @@ socket.on('/muse/acc', function (data){
 
   // var mappedAcc = map_range(alphaData.ar2, 0, 1, 0, 19.5);
   // camera
-  camera.position.x = (mouseX - camera.position.x) * 0.02;
+  // camera.position.x = (accLR - camera.position.x) * 0.02; //left right
   // console.log(accLR)
   // console.log(camera.position.x)
-  camera.position.y = (-mouseY - camera.position.y) * 0.02;
-  // camera.position.z = (-accFB - camera.position.z) * 0.02;
+  // camera.position.y = (-accUD/10 - camera.position.y) * 0.02;
+  // console.log("acc " + -accFB + " plus camera " + camera.position.z);
+  // console.log(-accFB - camera.position.z);
+  // camera.position.z = (-accFB/10 - camera.position.z) * 0.02;
   
   
 });
@@ -260,7 +306,7 @@ socket.on('/muse/acc', function (data){
 var lastTime = performance.now(), //  
     threshold = 1000 / 60; // 1/60 seconds
 
-socket.on('/muse/elements/alpha_session_score', function (data){
+socket.on('/muse/elements/beta_session_score', function (data){
 
   // COMMENT THIS LINE FOR DYNAMIC DATA 
   // var data = dataFixture;
@@ -325,62 +371,64 @@ Leap.loop({
       z: swipeZ
     }
 
-    var brush = new THREE.Mesh(icoGeo1, solidMat);
-    brush.position.x = pos.x / 50; 
-    brush.position.y = - pos.y / 50;
-    brush.material.opacity = .3; 
-    // brush.position.z = pos.z / 50;
-    // brush.rotation.set(Math.random(), Math.random(), Math.random());
-    brush.rotation.z = Date.now() * 0.0009; 
-    brush.rotation.y = Date.now() * 0.0009;
-    TweenMax.from(brush.scale,1,{x:0.001,y:0.001,z:0.001}); 
-    
-    console.log("avgs " + thetaAvg, alphaAvg)
-    // if (alphaAvg >= .7) {    
-    //   brush.geometry = sphereGeo;  
+    console.log(swipeX)
 
-    // } 
-    // else if (alphaAvg < .7){ 
-    //   brush.geometry = icoGeo1; 
-    //   brush.material.opacity = .5; 
-    //   var s = Math.sin( Date.now() * 0.002 );
-    //     brush.material.color.setHSL(0.5, s, 0.5 );
-    //   // ico.material.color = new THREE.Color(0xf58500); 
-    // } 
+    if (thetaAvg !== 0 && alphaAvg !== 0) {
+      var brush = new THREE.Mesh(sphereGeo, solidMat);
+      brush.position.x = pos.x / 50; 
+      brush.position.y = - pos.y / 50;
+      brush.position.z = pos.z / 50;
+      brush.material.opacity = .3; 
+      // brush.rotation.set(Math.random(), Math.random(), Math.random());
+      brush.rotation.z = Date.now() * 0.0009; 
+      brush.rotation.y = Date.now() * 0.0009;
+      TweenMax.from(brush.scale,1,{x:0.001,y:0.001,z:0.001}); 
 
-    if (thetaAvg > alphaAvg) {
-      brush.geometry = sphereGeo;
-      brush.scale.set(thetaAvg * 5, thetaAvg * 5, thetaAvg * 5);     
-      if (thetaAvg >= .7) {
-        brush.material = wfMatT; 
+      if (thetaAvg > alphaAvg) {
+        brush.geometry = icoGeo1;
+        brush.scale.set(thetaAvg * 5, thetaAvg * 5, thetaAvg * 5);     
+        if (thetaAvg >= .7) {
+          brush.material = solidMat; 
+          guide.innerHTML =
+               '<p>Brain State: High Theta</p>';          
+        } 
+        else if (thetaAvg >= .3 && thetaAvg < .7){
+          brush.material = wfMatB; 
+          guide.innerHTML =
+               '<p>Brain State: Mid Theta</p>';           
+        }
+        else{
+          brush.material = wfMatP; 
+          guide.innerHTML =
+               '<p>Brain State: Low Theta</p>';           
+        };  
       } 
-      else if (thetaAvg >= .3 && thetaAvg < .7){
-        brush.material = wfMatB; 
-      }
       else{
-        brush.material = wfMatP; 
-      };  
-    } 
-    else{
-      brush.geometry = tetraGeo1;
-      brush.scale.set(alphaAvg * 5, alphaAvg * 5, alphaAvg * 5); 
-      if (alphaAvg >= .7) {
-        brush.material = wfMatK;
-      } 
-      else if (alphaAvg >= .3 && alphaAvg < .7){
-        brush.material = wfMatO;
-      }
-      else{
-        brush.material = wfMatY;
+        brush.geometry = tetraGeo1;
+        brush.scale.set(alphaAvg * 5, alphaAvg * 5, alphaAvg * 5); 
+        if (alphaAvg >= .7) {
+          brush.material = wfMatK;
+          guide.innerHTML =
+               '<p>Brain State: High Beta</p>';           
+        } 
+        else if (alphaAvg >= .3 && alphaAvg < .7){
+          brush.material = wfMatO;
+          guide.innerHTML =
+               '<p>Brain State: Mid Beta</p>';           
+        }
+        else{
+          brush.material = wfMatY;
+          guide.innerHTML =
+               '<p>Brain State: Low Beta</p>';           
+        };
       };
+      brushes.add(brush);
+      if (brushes.children.length > 1000) {
+           var oldestBrush = brushes.children[0];
+           brushes.remove(oldestBrush)
+       } 
+      console.log(brushes.children.length)      
     };
-
-    if (thetaAvg === 0 || alphaAvg === 0) {
-      brush.material.opacity = 0; 
-    };
-
-    scene.add(brush);
-
   }
  
 }).use('screenPosition');
@@ -391,7 +439,7 @@ socket.on('/muse/elements/experimental/concentration', function (data){
 
 
   focusData = data.values;
-//  console.log(focusData)
+ console.log(focusData)
   // if (focusData > 0.5) {
   //     if (object.material != solidMat){
   //         object.material = solidMat
@@ -406,7 +454,8 @@ socket.on('/muse/elements/experimental/concentration', function (data){
 
 
   if (focusData === 1){
-    // do something
+    // set interval, every 2 minutes screenshot and removes brushes 
+    // alert("You've obtained high focus!")
   }
   
 });

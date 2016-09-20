@@ -43,7 +43,7 @@ controller.on('deviceDisconnected', function() {
 
 controller.on('deviceFrame', function(frame) {
   var numberOfFingers = frame.fingers.length;
-  console.log(numberOfFingers);
+  // console.log(numberOfFingers);
 });
 
 controller.connect();
